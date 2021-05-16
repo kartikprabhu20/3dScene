@@ -28,22 +28,21 @@ public class ModelManager : MonoBehaviour
     public List<Material> floorList;
     public List<Material> skyBoxList;
 
-
+    public Shader shader;
     public string datapath;
 
     GameObject model;
 
     public GameObject testmodel;
+    private System.Random random = new System.Random();
+
+    private string[] roomPaths;
+    private string[] roomMtlPaths;
 
     // Start is called before the first frame update
     void Start()
     {
 
-        //string objPath = "/Users/apple/OVGU/Thesis/Dataset/3D-FUTURE-model_editedSmall/3D-FUTURE-model/0a0f0cf2-3a34-4ba2-b24f-34f361c36b3e/normalized_model.obj";
-        //GameObject obj = loadAndDisplayMesh(objPath);
-        //MainCamera = Camera.main;
-
-        StartCoroutine(LoadObjects());
 
         //Test for testmodel
         //Transform[] allChildren = testmodel.GetComponentsInChildren<Transform>();
@@ -57,6 +56,104 @@ public class ModelManager : MonoBehaviour
         //var categoryReferenceSize = categoryReferenceBounds.size;
         ////float minimumNewSizeRatio = Math.Min(categoryReferenceSize.x / currentSize.x, Math.Min(categoryReferenceSize.y / currentSize.y, categoryReferenceSize.z / currentSize.z));
         //testmodel.transform.localScale = testmodel.transform.localScale * (categoryReferenceSize.y / currentSize.y);
+    }
+
+    
+
+    public void randomizeEnvironment()
+    {
+        string rootRoomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/rooms/";
+        updateRoomPathList(rootRoomPath);
+
+        try
+        {
+            model.SetActive(false);
+            DestroyImmediate(model);
+        }
+        catch
+        {
+            Debug.Log("No model object to destroy");
+        }
+
+        randomiseSkybox();
+
+
+        string objPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/1Bedroom/77_labels.obj";
+        string mtlPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/1Bedroom/77_labels.mtl";
+
+        int roomIndex = random.Next(roomPaths.Length);
+        //string objPath = roomPaths[roomIndex];
+        //string mtlPath = roomMtlPaths[roomIndex];
+
+        model = new OBJLoader().Load(objPath, mtlPath);
+
+        changeShader(model);
+        applyTextures(model);
+    }
+
+    void updateRoomPathList(string rootRoomPath)
+    {
+        string[] dirList = Directory.GetDirectories(rootRoomPath);
+
+        foreach (string dir in dirList)
+        {
+            roomPaths = Directory.GetFiles(dir, "*.obj");
+            roomMtlPaths = Directory.GetFiles(dir, "*.mtl");
+
+        }
+
+    }
+
+    void applyTextures(GameObject gameObject)
+    {
+        string rootTexturePath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
+        string[] dirList = Directory.GetDirectories(rootTexturePath);
+
+
+        Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
+        foreach (Transform child in allChildren)
+        {
+            string textureFolder = rootTexturePath + Path.DirectorySeparatorChar + child.name.Split('.')[0];
+            if (dirList.Contains(textureFolder))
+            {
+                string[] textureList = Directory.GetFiles(textureFolder);
+                Renderer rend = child.GetComponent<Renderer>();
+                if (rend != null)
+                {
+                    Debug.Log("applying texture");
+                    rend.material.mainTexture = loadTexture(textureList[random.Next(textureList.Length)]);
+                }
+                //break;
+            }
+        }
+    }
+
+    Texture2D loadTexture(string filePath)
+    {
+        Texture2D texture = null;
+        if (File.Exists(filePath))     {
+            byte[] fileData = File.ReadAllBytes(filePath);
+            texture = new Texture2D(2, 2);
+            texture.LoadImage(fileData); //..this will auto-resize the texture dimensions.
+        }
+
+        return texture;
+    }
+
+    public void createDataset()
+    {
+        try
+        {
+
+            model.SetActive(false);
+            DestroyImmediate(model);
+        }
+        catch
+        {
+            Debug.Log("No model object to destroy");
+        }
+            
+        StartCoroutine(LoadObjects());
     }
 
     float componentMax(Vector3 a)
@@ -108,7 +205,6 @@ public class ModelManager : MonoBehaviour
 
             //To teest single model
             //string[] folders = { "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/chair/IKEA_EKENAS/" };
-            var random = new System.Random();
 
             foreach (string folderPath in folders)
             {
@@ -169,7 +265,7 @@ public class ModelManager : MonoBehaviour
                     MainCamera.transform.position = childCam.gameObject.transform.position;
                     MainCamera.transform.rotation = childCam.gameObject.transform.rotation;
 
-                    RenderSettings.skybox = skyBoxList[random.Next(skyBoxList.Count)];
+                    randomiseSkybox();
 
                     lightSource.GetComponent<Light>().intensity = random.Next(lightIntensityLow, lightIntensityHigh);
                     lightSource.gameObject.transform.eulerAngles = new Vector3(random.Next(lightXRotationLow, lightXRotationHigh), random.Next(lightYRotationLow, lightYRotationHigh), 0);
@@ -209,6 +305,26 @@ public class ModelManager : MonoBehaviour
             //break;
         }
         yield return model;
+    }
+
+    void randomiseSkybox()
+    {
+        RenderSettings.skybox = skyBoxList[random.Next(skyBoxList.Count)];
+    }
+
+    void changeShader(GameObject gameObject)
+    {
+        //Adding mesh collider to all child objects of model
+        Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
+        foreach (Transform child in allChildren)
+        {
+            Debug.Log(child.name);
+            Renderer rend = child.GetComponent<Renderer>();
+            if (rend != null)
+            {
+                rend.material.shader = shader;
+            }
+        }
     }
 
     void attachMeshCollider(GameObject child)
