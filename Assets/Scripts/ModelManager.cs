@@ -6,6 +6,7 @@ using System.IO;
 using System;
 using System.Linq;
 
+
 public class ModelManager : MonoBehaviour
 {
     public Camera MainCamera;
@@ -36,13 +37,17 @@ public class ModelManager : MonoBehaviour
     public GameObject testmodel;
     private System.Random random = new System.Random();
 
-    private string[] roomPaths;
-    private string[] roomMtlPaths;
+    private List<string> roomPaths = new List<string>();
+    private List<string> roomMtlPaths = new List<string>();
+
+    private RoomHelper roomHelper;
+    private GameObjectManager gameObjectManager;
 
     // Start is called before the first frame update
     void Start()
     {
-
+        gameObjectManager = new GameObjectManager();
+        roomHelper = new RoomHelper(shader, gameObjectManager);
 
         //Test for testmodel
         //Transform[] allChildren = testmodel.GetComponentsInChildren<Transform>();
@@ -59,116 +64,217 @@ public class ModelManager : MonoBehaviour
     }
 
     
-
-    public void randomizeEnvironment()
+    public void test()
     {
-        string rootRoomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/rooms/";
+        clearEnvironment();
+
+        string rootRoomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/rooms/"; //TODO: globalise
         updateRoomPathList(rootRoomPath);
 
+        for (int i = 0; i < roomPaths.Count; i++)
+        {
+            string objPath = roomPaths[i];
+            string mtlPath = roomMtlPaths[i];
+
+            room = new OBJLoader().Load(objPath, mtlPath);
+
+            //Debug.Log("==========================");
+
+            //Transform[] allChildren = room.GetComponentsInChildren<Transform>();
+
+            //List<string> objectList = new List<string>();
+            //foreach (Transform child in allChildren)
+            //{
+            //    //Debug.Log(child.name);
+            //    objectList.Add(child.name);
+            //}
+            //string result = string.Join(",", objectList.ToArray());
+            //Debug.Log(result);
+
+            //clearEnvironment();
+            //Debug.Log("==========================");
+
+            Debug.Log("==========================");
+
+           
+
+            var currentBounds = GetMeshHierarchyBounds(room);
+            var currentSize = currentBounds.size;
+            Debug.Log(currentSize.x);
+            Debug.Log(currentSize.y);
+            Debug.Log(currentSize.z);
+            //clearEnvironment();
+
+            //Debug.Log(RandomPointInBounds(currentBounds));
+            MainCamera.transform.position = RandomPointInBounds(currentBounds);
+
+            Debug.Log("==========================");
+            break;
+
+        }
+
+    }
+
+    public static Vector3 RandomPointTransform(Vector3 position, Vector3 distance)
+    {
+        return new Vector3(
+            UnityEngine.Random.Range(position.x - distance.x, position.x + distance.x) + distance.x,
+            UnityEngine.Random.Range(position.y , position.y + distance.y) + distance.y,
+            UnityEngine.Random.Range(position.z - distance.z, position.z + distance.z) + distance.z
+        );
+    }
+
+    private Vector3 RandomPoint(GameObject room,GameObject model, Vector3 distance)
+    {
+        Bounds roomBounds = GetMeshHierarchyBounds(room);
+        var modelBounds = GetMeshHierarchyBounds(model);
+        float diff = 1;
+        bool withinBounds = true;
+        Vector3 newPosition = Vector3.zero;
+        do
+        {
+            newPosition = new Vector3(
+                                UnityEngine.Random.Range(modelBounds.min.x - distance.x, modelBounds.max.x + distance.x),
+                                UnityEngine.Random.Range(modelBounds.min.y, modelBounds.max.y + distance.y),
+                                UnityEngine.Random.Range(modelBounds.min.z - distance.z, modelBounds.max.z + distance.z));
+
+            diff = Vector3.Distance(model.transform.position, newPosition);
+
+            withinBounds = roomBounds.Contains(newPosition);
+        } while (!(diff == 1.5f && withinBounds));
+
+
+        Debug.Log(diff);
+        return newPosition; // otherwise return the new position
+        
+    }
+
+    public static Vector3 RandomPointInBounds(Bounds bounds)
+    {
+        return new Vector3(
+            UnityEngine.Random.Range(bounds.min.x, bounds.max.x),
+            UnityEngine.Random.Range(bounds.min.y, bounds.max.y),
+            UnityEngine.Random.Range(bounds.min.z, bounds.max.z)
+        );
+    }
+
+    public void clearGameObject(GameObject gameObject)
+    {
         try
         {
-            model.SetActive(false);
-            DestroyImmediate(model);
+            gameObject.SetActive(false);
+            DestroyImmediate(gameObject);
         }
         catch
         {
             Debug.Log("No model object to destroy");
         }
-
-        randomiseSkybox();
-
-
-        string objPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/1Bedroom/77_labels.obj";
-        string mtlPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/1Bedroom/77_labels.mtl";
-
-        int roomIndex = random.Next(roomPaths.Length);
-        //string objPath = roomPaths[roomIndex];
-        //string mtlPath = roomMtlPaths[roomIndex];
-
-        model = new OBJLoader().Load(objPath, mtlPath);
-
-        changeShader(model);
-        applyTextures(model);
     }
 
+    public void clearEnvironment()
+    {
+        clearGameObject(room);
+        clearGameObject(model);
+    }
+
+    public void randomizeEnvironment()
+    {
+
+        StartCoroutine(randomiseEnv());
+    }
+
+    IEnumerator randomiseEnv()
+    {
+        string rootRoomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
+        //string rootRoomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/rooms/"; //TODO: globalise
+        updateRoomPathList(rootRoomPath);
+        clearEnvironment();
+        roomHelper.randomiseSkybox(skyBoxList);
+
+
+        //string objPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/1Bedroom/77_labels.obj";
+        //string mtlPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/1Bedroom/77_labels.mtl";
+
+        int roomIndex = random.Next(roomPaths.Count);
+        string objPath = roomPaths[roomIndex];
+        string mtlPath = roomMtlPaths[roomIndex];
+
+        room = new OBJLoader().Load(objPath, mtlPath);
+
+        roomHelper.changeShader(room);
+        roomHelper.preprocessRoom(room);
+        roomHelper.applyTextures(room);
+
+        string folderPath = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/chair/IKEA_EKENAS/";
+        string modelPath = Directory.GetFiles(folderPath, "*.obj")[0];
+        try
+        {
+            string modelmtlPath = Directory.GetFiles(folderPath, "*.mtl")[0];
+            model = new OBJLoader().Load(modelPath, modelmtlPath);
+        }
+        catch
+        {
+            model = new OBJLoader().Load(modelPath);
+        }
+
+
+        model.name = "target_model";
+
+        //Adding mesh collider to all child objects of model
+        Transform[] allChildren = model.GetComponentsInChildren<Transform>();
+        foreach (Transform child in allChildren)
+        {
+            attachMeshCollider(child.gameObject);
+        }
+
+        randomizeCamera(room,model, false);
+        replaceModel(room, model, "chair");
+
+        yield return room;
+    }
+
+
+
+
+
+    void randomizeCamera(GameObject room,GameObject targetObject, bool withBounds)
+    {
+        if (withBounds)
+        {
+            var currentBounds = GetMeshHierarchyBounds(targetObject);
+            MainCamera.transform.position = RandomPointInBounds(currentBounds);
+        }
+        else
+        {
+            //MainCamera.transform.position = RandomPointTransform(targetObject.transform.position, new Vector3(1f,1f,1f)); //TODO: make distance userinput
+            MainCamera.transform.position = RandomPoint(room,targetObject, new Vector3(1f, 1f, 1f)); //TODO: make distance userinput
+
+        }
+    }
     void updateRoomPathList(string rootRoomPath)
     {
         string[] dirList = Directory.GetDirectories(rootRoomPath);
 
         foreach (string dir in dirList)
         {
-            roomPaths = Directory.GetFiles(dir, "*.obj");
-            roomMtlPaths = Directory.GetFiles(dir, "*.mtl");
+            roomPaths.AddRange(Directory.GetFiles(dir, "*.obj"));
+            roomMtlPaths.AddRange(Directory.GetFiles(dir, "*.mtl"));
 
+            //Directory.GetFiles(dir, "*.obj").CopyTo(roomPaths, roomPaths.Length);
+            //Directory.GetFiles(dir, "*.mtl").CopyTo(roomMtlPaths, roomMtlPaths.Length);
         }
 
-    }
-
-    void applyTextures(GameObject gameObject)
-    {
-        string rootTexturePath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
-        string[] dirList = Directory.GetDirectories(rootTexturePath);
-
-
-        Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
-        foreach (Transform child in allChildren)
-        {
-            string textureFolder = rootTexturePath + Path.DirectorySeparatorChar + child.name.Split('.')[0];
-            if (dirList.Contains(textureFolder))
-            {
-                string[] textureList = Directory.GetFiles(textureFolder);
-                Renderer rend = child.GetComponent<Renderer>();
-                if (rend != null)
-                {
-                    Debug.Log("applying texture");
-                    rend.material.mainTexture = loadTexture(textureList[random.Next(textureList.Length)]);
-                }
-                //break;
-            }
-        }
-    }
-
-    Texture2D loadTexture(string filePath)
-    {
-        Texture2D texture = null;
-        if (File.Exists(filePath))     {
-            byte[] fileData = File.ReadAllBytes(filePath);
-            texture = new Texture2D(2, 2);
-            texture.LoadImage(fileData); //..this will auto-resize the texture dimensions.
-        }
-
-        return texture;
     }
 
     public void createDataset()
     {
-        try
-        {
-
-            model.SetActive(false);
-            DestroyImmediate(model);
-        }
-        catch
-        {
-            Debug.Log("No model object to destroy");
-        }
-            
+        clearEnvironment();     
         StartCoroutine(LoadObjects());
-    }
-
-    float componentMax(Vector3 a)
-    {
-        return Mathf.Max(Mathf.Max(a.x, a.y), a.z);
-    }
-
-    float componentMin(Vector3 a)
-    {
-        return Mathf.Min(Mathf.Min(a.x, a.y), a.z);
     }
 
     public Bounds GetMeshHierarchyBounds(GameObject go)
     {
-        var bounds = new Bounds(); // Not used, but a struct needs to be instantiated
+        Bounds bounds = new Bounds(); // Not used, but a struct needs to be instantiated
 
         if (go.GetComponent<Renderer>() != null)
         {
@@ -209,7 +315,8 @@ public class ModelManager : MonoBehaviour
             foreach (string folderPath in folders)
             {
                 Debug.Log(folderPath);
-                
+                randomizeEnvironment(); //change room
+
                 string objPath = Directory.GetFiles(folderPath, "*.obj")[0];
                 try
                 {
@@ -219,8 +326,10 @@ public class ModelManager : MonoBehaviour
                 catch
                 {
                     model = new OBJLoader().Load(objPath);
-
                 }
+
+                replaceModel(room, model, category);
+
                 model.SetActive(true);
 
                 model.transform.position = new Vector3(0, 0, 0);
@@ -228,6 +337,8 @@ public class ModelManager : MonoBehaviour
                 Rigidbody gameObjectsRigidBody = model.AddComponent<Rigidbody>();
                 model.GetComponent<Rigidbody>().drag = 10;
                 model.GetComponent<Rigidbody>().mass = 10;
+
+
 
                 Vector3 sizeCalculated = model.GetComponent<Renderer>().bounds.size;
                 Debug.Log(sizeCalculated);
@@ -265,7 +376,7 @@ public class ModelManager : MonoBehaviour
                     MainCamera.transform.position = childCam.gameObject.transform.position;
                     MainCamera.transform.rotation = childCam.gameObject.transform.rotation;
 
-                    randomiseSkybox();
+                    roomHelper.randomiseSkybox(skyBoxList);
 
                     lightSource.GetComponent<Light>().intensity = random.Next(lightIntensityLow, lightIntensityHigh);
                     lightSource.gameObject.transform.eulerAngles = new Vector3(random.Next(lightXRotationLow, lightXRotationHigh), random.Next(lightYRotationLow, lightYRotationHigh), 0);
@@ -297,8 +408,8 @@ public class ModelManager : MonoBehaviour
                 yield return new WaitForEndOfFrame();
                 yield return new WaitForEndOfFrame();
                 yield return new WaitForEndOfFrame();
-                model.SetActive(false);
-                DestroyImmediate(model);
+
+                clearEnvironment();
                 //break;
             }
             categoryIndex = categoryIndex + 1;
@@ -307,24 +418,47 @@ public class ModelManager : MonoBehaviour
         yield return model;
     }
 
-    void randomiseSkybox()
+    private void replaceModel(GameObject room, GameObject model, string category)
     {
-        RenderSettings.skybox = skyBoxList[random.Next(skyBoxList.Count)];
-    }
-
-    void changeShader(GameObject gameObject)
-    {
-        //Adding mesh collider to all child objects of model
-        Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
+        List<GameObject> matchingObjects = new List<GameObject>();
+        Transform[] allChildren = room.GetComponentsInChildren<Transform>();
+        int i = 0;
         foreach (Transform child in allChildren)
         {
-            Debug.Log(child.name);
-            Renderer rend = child.GetComponent<Renderer>();
-            if (rend != null)
+            if (child.name == category)
             {
-                rend.material.shader = shader;
+                i += 1;
+                matchingObjects.Add(child.gameObject);
             }
         }
+
+        if(matchingObjects.Count == 0)
+        {
+            Debug.Log("No match found");
+            return;
+        }
+
+        GameObject reference = matchingObjects[random.Next(matchingObjects.Count)];
+
+
+        modifyScale(model, reference);
+        //model.transform.parent = reference.transform.parent;
+
+        model.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
+        DestroyImmediate(reference);
+
+        MainCamera.transform.LookAt(model.transform);
+    }
+
+    private void modifyScale(GameObject target, GameObject reference)
+    {
+        var currentBounds = GetMeshHierarchyBounds(target);
+        var currentSize = currentBounds.size;
+        var categoryReferenceBounds = reference.GetComponent<Renderer>().bounds;
+        var categoryReferenceSize = categoryReferenceBounds.size;
+        float minimumNewSizeRatio = Math.Min(categoryReferenceSize.x / currentSize.x, Math.Min(categoryReferenceSize.y / currentSize.y, categoryReferenceSize.z / currentSize.z));
+        //float minimumNewSizeRatio = (categoryReferenceSize.y / currentSize.y); //Only match height
+        target.transform.localScale = target.transform.localScale * minimumNewSizeRatio;
     }
 
     void attachMeshCollider(GameObject child)
