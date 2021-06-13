@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using System.Linq;
+using System;
 
 public class RoomHelper 
 {
@@ -23,14 +24,12 @@ public class RoomHelper
             {"light","lamp"},{"pilow","pillow"}
         };
 
-private GameObjectManager gameObjectManager;
     private System.Random random = new System.Random();
     private Shader shader;
 
-    public RoomHelper(Shader shader, GameObjectManager gameObjectManager)
+    public RoomHelper(Shader shader)
     {
         this.shader = shader;
-        this.gameObjectManager = gameObjectManager;
     }
 
     
@@ -43,7 +42,6 @@ private GameObjectManager gameObjectManager;
 
     public void changeShader(GameObject gameObject)
     {
-        //Adding mesh collider to all child objects of model
         Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
         foreach (Transform child in allChildren)
         {
@@ -88,9 +86,8 @@ private GameObjectManager gameObjectManager;
 
     }
 
-    public void applyTextures(GameObject gameObject)
+    public void applyTextures(GameObject gameObject,string rootTexturePath)
     {
-        string rootTexturePath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
         string[] dirList = Directory.GetDirectories(rootTexturePath);
 
 
@@ -132,5 +129,18 @@ private GameObjectManager gameObjectManager;
         return texture;
     }
 
+    internal void attachMeshColliders(GameObject gameObject)
+    {
+        Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
+        foreach (Transform child in allChildren)
+        {
+            attachMeshCollider(child.gameObject);
+        }
+    }
 
+    void attachMeshCollider(GameObject child)
+    {
+        child.AddComponent<MeshCollider>();
+        child.GetComponent<MeshCollider>().convex = true;
+    }
 }

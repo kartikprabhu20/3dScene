@@ -5,7 +5,7 @@ using UnityEngine;
 using System.IO;
 using System;
 using System.Linq;
-
+using UnityEngine.UI;
 
 public class ModelManager : MonoBehaviour
 {
@@ -18,11 +18,15 @@ public class ModelManager : MonoBehaviour
     public int lightYRotationLow;
     public int lightYRotationHigh;
 
+    public InputField roomPathField;
+    public InputField materialPathField;
+    public InputField modelsPathField;
+    public InputField outputPathField;
 
     public string[] categories;
     public GameObject[] categoryReference;
     public GameObject cameraPositions;
-    public GameObject room;
+    private GameObject room;
     public GameObject walls;
     public GameObject floor;
     public List<Material> wallList;
@@ -41,13 +45,16 @@ public class ModelManager : MonoBehaviour
     private List<string> roomMtlPaths = new List<string>();
 
     private RoomHelper roomHelper;
-    private GameObjectManager gameObjectManager;
+    private ModelHelper modelHelper;
+    private Pipeline currentPipeline;
+
 
     // Start is called before the first frame update
     void Start()
     {
-        gameObjectManager = new GameObjectManager();
-        roomHelper = new RoomHelper(shader, gameObjectManager);
+        roomHelper = new RoomHelper(shader);
+        modelHelper = new ModelHelper();
+        currentPipeline = PipelineFactory.GetInstance(roomHelper,modelHelper).getPipeline(PipelineType.SINGLE_PIPELINE); //Defualt
 
         //Test for testmodel
         //Transform[] allChildren = testmodel.GetComponentsInChildren<Transform>();
@@ -63,7 +70,7 @@ public class ModelManager : MonoBehaviour
         //testmodel.transform.localScale = testmodel.transform.localScale * (categoryReferenceSize.y / currentSize.y);
     }
 
-    
+
     public void test()
     {
         clearEnvironment();
@@ -165,9 +172,12 @@ public class ModelManager : MonoBehaviour
             gameObject.SetActive(false);
             DestroyImmediate(gameObject);
         }
-        catch
+        catch (Exception e)
+
         {
             Debug.Log("No model object to destroy");
+            Debug.Log(e);
+
         }
     }
 
@@ -177,57 +187,39 @@ public class ModelManager : MonoBehaviour
         clearGameObject(model);
     }
 
-    public void randomizeEnvironment()
-    {
 
-        StartCoroutine(randomiseEnv());
+
+    public void singleEnvironment()
+    {
+        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
+        StartCoroutine(buildEnv());
     }
 
-    IEnumerator randomiseEnv()
+    public void randomizeEnvironment()
     {
-        string rootRoomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
-        //string rootRoomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/rooms/"; //TODO: globalise
-        updateRoomPathList(rootRoomPath);
+        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        StartCoroutine(buildEnv());
+    }
+
+
+    IEnumerator buildEnv()
+    {
         clearEnvironment();
+
+        String datapath = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/";
+        String roomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
+        String texturePath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
+        currentPipeline.init(datapath, roomPath, texturePath, categories);
+
+        room = currentPipeline.getRoomObject();
+        currentPipeline.setupRoom(room);
+
+        model = currentPipeline.getModelObject();
+        currentPipeline.setupModel(model);
+
         roomHelper.randomiseSkybox(skyBoxList);
 
-
-        //string objPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/1Bedroom/77_labels.obj";
-        //string mtlPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/1Bedroom/77_labels.mtl";
-
-        int roomIndex = random.Next(roomPaths.Count);
-        string objPath = roomPaths[roomIndex];
-        string mtlPath = roomMtlPaths[roomIndex];
-
-        room = new OBJLoader().Load(objPath, mtlPath);
-
-        roomHelper.changeShader(room);
-        roomHelper.preprocessRoom(room);
-        roomHelper.applyTextures(room);
-
-        string folderPath = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/chair/IKEA_EKENAS/";
-        string modelPath = Directory.GetFiles(folderPath, "*.obj")[0];
-        try
-        {
-            string modelmtlPath = Directory.GetFiles(folderPath, "*.mtl")[0];
-            model = new OBJLoader().Load(modelPath, modelmtlPath);
-        }
-        catch
-        {
-            model = new OBJLoader().Load(modelPath);
-        }
-
-
-        model.name = "target_model";
-
-        //Adding mesh collider to all child objects of model
-        Transform[] allChildren = model.GetComponentsInChildren<Transform>();
-        foreach (Transform child in allChildren)
-        {
-            attachMeshCollider(child.gameObject);
-        }
-
-        randomizeCamera(room,model, false);
+        randomizeCamera(room, model, false);
         replaceModel(room, model, "chair");
 
         yield return room;
@@ -235,22 +227,34 @@ public class ModelManager : MonoBehaviour
 
 
 
-
-
     void randomizeCamera(GameObject room,GameObject targetObject, bool withBounds)
     {
-        if (withBounds)
+        Renderer renderer = targetObject.gameObject.GetComponent<MeshRenderer>();
+        bool randomized = false;
+        do
         {
-            var currentBounds = GetMeshHierarchyBounds(targetObject);
-            MainCamera.transform.position = RandomPointInBounds(currentBounds);
-        }
-        else
-        {
-            //MainCamera.transform.position = RandomPointTransform(targetObject.transform.position, new Vector3(1f,1f,1f)); //TODO: make distance userinput
-            MainCamera.transform.position = RandomPoint(room,targetObject, new Vector3(1f, 1f, 1f)); //TODO: make distance userinput
+            if (withBounds)
+            {
+                var currentBounds = GetMeshHierarchyBounds(targetObject);
+                MainCamera.transform.position = RandomPointInBounds(currentBounds);
+            }
+            else
+            {
+                //MainCamera.transform.position = RandomPointTransform(targetObject.transform.position, new Vector3(1f,1f,1f)); //TODO: make distance userinput
+                MainCamera.transform.position = RandomPoint(room, targetObject, new Vector3(1f, 1f, 1f)); //TODO: make distance userinput
 
-        }
+            }
+
+            randomized = IsVisibleFrom(renderer, MainCamera);
+        } while(!randomized);
     }
+
+    public bool IsVisibleFrom(Renderer renderer, Camera camera)
+    {
+        Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
+        return GeometryUtility.TestPlanesAABB(planes, renderer.bounds);
+    }
+
     void updateRoomPathList(string rootRoomPath)
     {
         string[] dirList = Directory.GetDirectories(rootRoomPath);
@@ -339,12 +343,11 @@ public class ModelManager : MonoBehaviour
                 model.GetComponent<Rigidbody>().mass = 10;
 
 
+                //Vector3 sizeCalculated = model.GetComponent<Renderer>().bounds.size;
+                //Debug.Log(sizeCalculated);
 
-                Vector3 sizeCalculated = model.GetComponent<Renderer>().bounds.size;
-                Debug.Log(sizeCalculated);
-
-                Vector3 sizeCalculated2= categoryReference[0].GetComponent<Renderer>().bounds.size;
-                Debug.Log(sizeCalculated2);
+                //Vector3 sizeCalculated2= categoryReference[0].GetComponent<Renderer>().bounds.size;
+                //Debug.Log(sizeCalculated2);
 
 
                 //Adding mesh collider to all child objects of model
