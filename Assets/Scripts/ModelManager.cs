@@ -22,6 +22,8 @@ public class ModelManager : MonoBehaviour
     public InputField materialPathField;
     public InputField modelsPathField;
     public InputField outputPathField;
+    public InputField categoriesInputField;
+
 
     public string[] categories;
     public GameObject[] categoryReference;
@@ -46,6 +48,7 @@ public class ModelManager : MonoBehaviour
 
     private RoomHelper roomHelper;
     private ModelHelper modelHelper;
+    private CameraHelper cameraHelper;
     private Pipeline currentPipeline;
 
 
@@ -54,8 +57,9 @@ public class ModelManager : MonoBehaviour
     {
         roomHelper = new RoomHelper(shader);
         modelHelper = new ModelHelper();
-        currentPipeline = PipelineFactory.GetInstance(roomHelper,modelHelper).getPipeline(PipelineType.SINGLE_PIPELINE); //Defualt
-
+        cameraHelper = new CameraHelper(MainCamera);
+        currentPipeline = PipelineFactory.GetInstance(roomHelper,modelHelper,cameraHelper).getPipeline(PipelineType.SINGLE_PIPELINE); //Defualt
+        categoriesInputField.text = "chair,bed,desk,wardrobe,table,bookcase,sofa";
         //Test for testmodel
         //Transform[] allChildren = testmodel.GetComponentsInChildren<Transform>();
         //foreach (Transform child in allChildren)
@@ -105,7 +109,7 @@ public class ModelManager : MonoBehaviour
 
            
 
-            var currentBounds = GetMeshHierarchyBounds(room);
+            var currentBounds = roomHelper.GetMeshHierarchyBounds(room);
             var currentSize = currentBounds.size;
             Debug.Log(currentSize.x);
             Debug.Log(currentSize.y);
@@ -133,8 +137,8 @@ public class ModelManager : MonoBehaviour
 
     private Vector3 RandomPoint(GameObject room,GameObject model, Vector3 distance)
     {
-        Bounds roomBounds = GetMeshHierarchyBounds(room);
-        var modelBounds = GetMeshHierarchyBounds(model);
+        Bounds roomBounds = roomHelper.GetMeshHierarchyBounds(room);
+        var modelBounds = modelHelper.GetMeshHierarchyBounds(model);
         float diff = 1;
         bool withinBounds = true;
         Vector3 newPosition = Vector3.zero;
@@ -191,13 +195,13 @@ public class ModelManager : MonoBehaviour
 
     public void singleEnvironment()
     {
-        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
+        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
         StartCoroutine(buildEnv());
     }
 
     public void randomizeEnvironment()
     {
-        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper).getPipeline(PipelineType.ROOM_PIPELINE);
         StartCoroutine(buildEnv());
     }
 
@@ -206,10 +210,14 @@ public class ModelManager : MonoBehaviour
     {
         clearEnvironment();
 
+        //String datapath = modelsPathField.text;
+        //String roomPath = roomPathField.text;
+        //String texturePath = materialPathField.text;
+
         String datapath = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/";
         String roomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
         String texturePath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
-        currentPipeline.init(datapath, roomPath, texturePath, categories);
+        currentPipeline.init(datapath, roomPath, texturePath, categoriesInputField);
 
         room = currentPipeline.getRoomObject();
         currentPipeline.setupRoom(room);
@@ -219,7 +227,7 @@ public class ModelManager : MonoBehaviour
 
         roomHelper.randomiseSkybox(skyBoxList);
 
-        randomizeCamera(room, model, false);
+        //randomizeCamera(room, model, false);
         replaceModel(room, model, "chair");
 
         yield return room;
@@ -235,7 +243,7 @@ public class ModelManager : MonoBehaviour
         {
             if (withBounds)
             {
-                var currentBounds = GetMeshHierarchyBounds(targetObject);
+                var currentBounds = modelHelper.GetMeshHierarchyBounds(targetObject);
                 MainCamera.transform.position = RandomPointInBounds(currentBounds);
             }
             else
@@ -276,31 +284,7 @@ public class ModelManager : MonoBehaviour
         StartCoroutine(LoadObjects());
     }
 
-    public Bounds GetMeshHierarchyBounds(GameObject go)
-    {
-        Bounds bounds = new Bounds(); // Not used, but a struct needs to be instantiated
-
-        if (go.GetComponent<Renderer>() != null)
-        {
-            bounds = go.GetComponent<Renderer>().bounds;
-            // Make sure the parent is included
-            Debug.Log("Found parent bounds: " + bounds);
-            //bounds.Encapsulate(go.renderer.bounds);
-        }
-        foreach (var c in go.GetComponentsInChildren<MeshRenderer>())
-        {
-            //Debug.Log("Found {0} bounds are {1}", c.name, c.bounds);
-            if (bounds.size == Vector3.zero)
-            {
-                bounds = c.bounds;
-            }
-            else
-            {
-                bounds.Encapsulate(c.bounds);
-            }
-        }
-        return bounds;
-    }
+   
 
     IEnumerator LoadObjects()
     {
@@ -354,12 +338,12 @@ public class ModelManager : MonoBehaviour
                 Transform[] allChildren = model.GetComponentsInChildren<Transform>();
                 foreach (Transform child in allChildren)
                 {
-                    attachMeshCollider(child.gameObject);
+                    modelHelper.attachMeshColliders(child.gameObject);
                 }
 
                 if (categoryReference.Length != 0 && categories.Length == categoryReference.Length)
                 {
-                    var currentBounds = GetMeshHierarchyBounds(model);
+                    var currentBounds = modelHelper.GetMeshHierarchyBounds(model);
                     var currentSize = currentBounds.size;
                     var categoryReferenceBounds = categoryReference[categoryIndex].GetComponent<Renderer>().bounds;
                     var categoryReferenceSize = categoryReferenceBounds.size;
@@ -444,7 +428,7 @@ public class ModelManager : MonoBehaviour
         GameObject reference = matchingObjects[random.Next(matchingObjects.Count)];
 
 
-        modifyScale(model, reference);
+        modelHelper.modifyScale(model, reference);
         //model.transform.parent = reference.transform.parent;
 
         model.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
@@ -453,20 +437,4 @@ public class ModelManager : MonoBehaviour
         MainCamera.transform.LookAt(model.transform);
     }
 
-    private void modifyScale(GameObject target, GameObject reference)
-    {
-        var currentBounds = GetMeshHierarchyBounds(target);
-        var currentSize = currentBounds.size;
-        var categoryReferenceBounds = reference.GetComponent<Renderer>().bounds;
-        var categoryReferenceSize = categoryReferenceBounds.size;
-        float minimumNewSizeRatio = Math.Min(categoryReferenceSize.x / currentSize.x, Math.Min(categoryReferenceSize.y / currentSize.y, categoryReferenceSize.z / currentSize.z));
-        //float minimumNewSizeRatio = (categoryReferenceSize.y / currentSize.y); //Only match height
-        target.transform.localScale = target.transform.localScale * minimumNewSizeRatio;
-    }
-
-    void attachMeshCollider(GameObject child)
-    {
-        child.AddComponent<MeshCollider>();
-        child.GetComponent<MeshCollider>().convex = true;
-    }
 }

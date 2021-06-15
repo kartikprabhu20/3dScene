@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System;
 
-public class RoomHelper 
+public class RoomHelper: Helper
 {
     //list of common object, least important to most important(roughly)
     public string[] commonObjects = {
@@ -127,20 +127,5 @@ public class RoomHelper
         }
 
         return texture;
-    }
-
-    internal void attachMeshColliders(GameObject gameObject)
-    {
-        Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
-        foreach (Transform child in allChildren)
-        {
-            attachMeshCollider(child.gameObject);
-        }
-    }
-
-    void attachMeshCollider(GameObject child)
-    {
-        child.AddComponent<MeshCollider>();
-        child.GetComponent<MeshCollider>().convex = true;
     }
 }
