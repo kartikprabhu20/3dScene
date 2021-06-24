@@ -31,7 +31,7 @@ public class Helper
         {
             bounds = go.GetComponent<Renderer>().bounds;
             // Make sure the parent is included
-            Debug.Log("Found parent bounds: " + bounds);
+            //Debug.Log("Found parent bounds: " + bounds);
             //bounds.Encapsulate(go.renderer.bounds);
         }
         foreach (var c in go.GetComponentsInChildren<MeshRenderer>())

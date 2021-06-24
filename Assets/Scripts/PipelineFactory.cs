@@ -5,22 +5,24 @@
     private RoomHelper roomHelper;
     private ModelHelper modelHelper;
     private CameraHelper cameraHelper;
+    private LightManager lightHelper;
 
-    private PipelineFactory(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper)
+    private PipelineFactory(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper, LightManager lightHelper)
     {
         this.roomHelper = roomHelper;
         this.modelHelper = modelHelper;
         this.cameraHelper = cameraHelper;
+        this.lightHelper = lightHelper;
 
     }
 
-    public static PipelineFactory GetInstance(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper)
+    public static PipelineFactory GetInstance(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper, LightManager lightHelper)
     {
         lock (padlock)
         {
             if (instance == null)
             {
-                instance = new PipelineFactory(roomHelper, modelHelper,cameraHelper);
+                instance = new PipelineFactory(roomHelper, modelHelper,cameraHelper, lightHelper);
             }
             return instance;
         }
@@ -32,11 +34,11 @@
         switch (id)
         {
             case PipelineType.SINGLE_PIPELINE:
-                return new SinglePipeline(this.roomHelper, this.modelHelper,this.cameraHelper);
+                return new SinglePipeline(this.roomHelper, this.modelHelper,this.cameraHelper, this.lightHelper);
             case PipelineType.ROOM_PIPELINE:
-                return new RoomPipeline(this.roomHelper, this.modelHelper, this.cameraHelper);
+                return new RoomPipeline(this.roomHelper, this.modelHelper, this.cameraHelper, this.lightHelper);
             default:
-                return new SinglePipeline(this.roomHelper, this.modelHelper, this.cameraHelper);
+                return new SinglePipeline(this.roomHelper, this.modelHelper, this.cameraHelper, this.lightHelper);
         }
     }
 

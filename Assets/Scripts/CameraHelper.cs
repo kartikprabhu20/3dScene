@@ -1,34 +1,70 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class CameraHelper: Helper
 {
     private Camera mainCamera;
+    private float minDistance = 1.0f;
+    private float maxDistance= 2.0f;
+    private float minHeight = 0.25f;
 
-    public CameraHelper(Camera mainCamera)
+    public CameraHelper(Camera mainCamera, string minDistance, string maxDistance, string minHeight)
     {
         this.mainCamera = mainCamera;
+        if (!String.IsNullOrEmpty(minDistance))
+        {
+            this.minDistance = float.Parse(minDistance);
+        }
+
+        if (!String.IsNullOrEmpty(maxDistance))
+        {
+            this.maxDistance = float.Parse(maxDistance);
+        }
+
+        if (!String.IsNullOrEmpty(minHeight))
+        {
+            this.minHeight = float.Parse(minHeight);
+        }
+
     }
 
-    void randomizeCamera(GameObject room, GameObject targetObject, bool withBounds)
+    public void randomizeCamera(GameObject room, GameObject targetObject, bool withBounds)
     {
         Renderer renderer = targetObject.gameObject.GetComponent<MeshRenderer>();
         bool randomized = false;
         do
         {
-            if (withBounds)
-            {
-                var currentBounds = GetMeshHierarchyBounds(targetObject);
-                mainCamera.transform.position = RandomPointInBounds(currentBounds);
-            }
-            else
-            {
-                //MainCamera.transform.position = RandomPointTransform(targetObject.transform.position, new Vector3(1f,1f,1f)); //TODO: make distance userinput
-                mainCamera.transform.position = RandomPoint(room, targetObject, new Vector3(1f, 1f, 1f)); //TODO: make distance userinput
+            //if (withBounds)
+            //{
+            //    var currentBounds = GetMeshHierarchyBounds(targetObject);
+            //    mainCamera.transform.position = RandomPointInBounds(currentBounds);
+            //}
+            //else
+            //{
+            //    //MainCamera.transform.position = RandomPointTransform(targetObject.transform.position, new Vector3(1f,1f,1f)); //TODO: make distance userinput
+            //    mainCamera.transform.position = RandomPoint(room, targetObject, new Vector3(1f, 1f, 1f)); //TODO: make distance userinput
 
-            }
+            //}
+            Debug.Log("minDistance");
+            Debug.Log(this.minDistance);
+            Debug.Log(this.maxDistance);
 
-            randomized = IsVisibleFrom(renderer, mainCamera);
+            mainCamera.transform.position = RandomPointInAnnulus(targetObject.transform.position,this.minDistance,this.maxDistance);
+            mainCamera.transform.LookAt(targetObject.transform);
+            randomized = IsVisibleFrom(renderer, mainCamera) & (mainCamera.transform.position.y > this.minHeight);
         } while (!randomized);
+    }
+
+    public Vector3 RandomPointInAnnulus(Vector3 origin, float minRadius, float maxRadius)
+    {
+
+        var randomDirection = (UnityEngine.Random.insideUnitSphere + origin).normalized;
+
+        var randomDistance = UnityEngine.Random.Range(minRadius, maxRadius);
+
+        var point = origin + randomDirection * randomDistance;
+
+        return point;
     }
 
     private bool IsVisibleFrom(Renderer renderer, Camera camera)

@@ -8,35 +8,33 @@ using UnityEngine.UI;
 public class RoomPipeline : Pipeline
 {
     private int pipelineType = PipelineType.ROOM_PIPELINE;
-    private IEnumerator models;
    
-    private int modelNumber;
-
-    public RoomPipeline(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper)
+    public RoomPipeline(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper, LightManager lightHelper)
     {
         base.roomHelper = roomHelper;
         base.modelHelper = modelHelper;
         base.cameraHelper = cameraHelper;
+        base.lightHelper = lightHelper;
     }
 
-    public override void init(string dataPath, string rootRoomPath, string rootMaterialPath, InputField categoriesInputField)
+    public override void init(string dataPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string totalModelCount, string imagesPerCategory)
     {
-        base.init(dataPath, rootRoomPath, rootMaterialPath, categoriesInputField);
-        this.modelNumber = 0;
+        base.init(dataPath, rootRoomPath, rootMaterialPath, categoriesInput, totalModelCount, imagesPerCategory);
+        int modelCount = 0;
 
-        foreach (string category in base.categories)
+        foreach (string category in this.categories)
         {
-            //Debug.Log(category);
-            string categoryPath = base.dataPath + Path.DirectorySeparatorChar + category;
-            //Debug.Log(categoryPath);
-
+            Debug.Log("category");
+            Debug.Log(category);
+            int catagoryCount = 0;
+            string categoryPath = this.dataPath + Path.DirectorySeparatorChar + category;
             string[] folders = Directory.GetDirectories(categoryPath, "*", System.IO.SearchOption.TopDirectoryOnly);
-
-            //To teest single model
-            //string[] folders = { "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/chair/IKEA_EKENAS/" };
 
             foreach (string folderPath in folders)
             {
+                catagoryCount++;
+                modelCount++;
+
                 string objPath = Directory.GetFiles(folderPath, "*.obj")[0];
                 string mtlPath = "";
                 try
@@ -50,9 +48,15 @@ public class RoomPipeline : Pipeline
                 modelPaths.Add(objPath);
                 modelMtlPaths.Add(mtlPath);
                 modelCategories.Add(category);
-            }
-        }
+                this.totalModelCount += 1;
 
+                //Debug.Log("catagoryCount");
+                //Debug.Log(catagoryCount);
+                //Debug.Log("modelCount");
+                //Debug.Log(modelCount);
+            }
+
+        }
     }
 
     public override int PipeLineType
@@ -68,26 +72,36 @@ public class RoomPipeline : Pipeline
 
         try
         {
-            return new OBJLoader().Load(objPath, mtlPath);
+            base.currentRoom = new OBJLoader().Load(objPath, mtlPath);
         }
         catch
         {
-           return new OBJLoader().Load(objPath);
+            base.currentRoom = new OBJLoader().Load(objPath);
         }
+
+        return base.currentRoom;
     }
 
     public override GameObject getModelObject()
     {
-        string objPath = modelPaths[this.modelNumber];
-        string mtlPath = modelMtlPaths[this.modelNumber];
-        this.modelNumber += 1;
+        string objPath = modelPaths[base.currentModelNumber];
+        string mtlPath = modelMtlPaths[base.currentModelNumber];
+        base.currentModelNumber += 1;
+
         try
         {
-            return new OBJLoader().Load(objPath, mtlPath);
+            base.currentModel = new OBJLoader().Load(objPath, mtlPath);
         }
         catch
         {
-            return new OBJLoader().Load(objPath);
+            base.currentModel = new OBJLoader().Load(objPath);
         }
+
+        return base.currentModel;
+    }
+
+    public override string getModelCategory()
+    {
+        return modelCategories[base.currentModelNumber];
     }
 }

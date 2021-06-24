@@ -10,6 +10,7 @@ using UnityEngine.UI;
 public class ModelManager : MonoBehaviour
 {
     public Camera MainCamera;
+    public GameObject lightSources;
     public Light lightSource;
     public int lightIntensityLow;
     public int lightIntensityHigh;
@@ -23,7 +24,12 @@ public class ModelManager : MonoBehaviour
     public InputField modelsPathField;
     public InputField outputPathField;
     public InputField categoriesInputField;
+    public InputField modelCountInputField;
+    public InputField categoryCountInputField;
 
+    public InputField cameraMinInputField;
+    public InputField cameraMaxInputField;
+    public InputField cameraHeightInputField;
 
     public string[] categories;
     public GameObject[] categoryReference;
@@ -49,6 +55,8 @@ public class ModelManager : MonoBehaviour
     private RoomHelper roomHelper;
     private ModelHelper modelHelper;
     private CameraHelper cameraHelper;
+    private LightManager lightHelper;
+
     private Pipeline currentPipeline;
 
 
@@ -57,9 +65,30 @@ public class ModelManager : MonoBehaviour
     {
         roomHelper = new RoomHelper(shader);
         modelHelper = new ModelHelper();
-        cameraHelper = new CameraHelper(MainCamera);
-        currentPipeline = PipelineFactory.GetInstance(roomHelper,modelHelper,cameraHelper).getPipeline(PipelineType.SINGLE_PIPELINE); //Defualt
+        lightHelper = new LightManager(lightSources);
+        cameraHelper = new CameraHelper(MainCamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
+        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE); //Defualt
+
+        //===============================TODO: remove
         categoriesInputField.text = "chair,bed,desk,wardrobe,table,bookcase,sofa";
+        modelCountInputField.text = "10";
+        categoryCountInputField.text = "2";
+
+        modelsPathField.text = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/";
+        roomPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
+        materialPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
+        modelCountInputField.text = "10";
+
+        cameraMinInputField.text = "1";
+        cameraMaxInputField.text = "1.5";
+        cameraHeightInputField.text = "0.25";
+
+        //===============================TODO: remove
+
+        cameraMinInputField.onValueChanged.AddListener(delegate { cameraParameterChanged(); });
+        cameraMaxInputField.onValueChanged.AddListener(delegate { cameraParameterChanged(); });
+        cameraHeightInputField.onValueChanged.AddListener(delegate { cameraParameterChanged(); });
+
         //Test for testmodel
         //Transform[] allChildren = testmodel.GetComponentsInChildren<Transform>();
         //foreach (Transform child in allChildren)
@@ -77,7 +106,6 @@ public class ModelManager : MonoBehaviour
 
     public void test()
     {
-        clearEnvironment();
 
         string rootRoomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/rooms/"; //TODO: globalise
         updateRoomPathList(rootRoomPath);
@@ -135,31 +163,7 @@ public class ModelManager : MonoBehaviour
         );
     }
 
-    private Vector3 RandomPoint(GameObject room,GameObject model, Vector3 distance)
-    {
-        Bounds roomBounds = roomHelper.GetMeshHierarchyBounds(room);
-        var modelBounds = modelHelper.GetMeshHierarchyBounds(model);
-        float diff = 1;
-        bool withinBounds = true;
-        Vector3 newPosition = Vector3.zero;
-        do
-        {
-            newPosition = new Vector3(
-                                UnityEngine.Random.Range(modelBounds.min.x - distance.x, modelBounds.max.x + distance.x),
-                                UnityEngine.Random.Range(modelBounds.min.y, modelBounds.max.y + distance.y),
-                                UnityEngine.Random.Range(modelBounds.min.z - distance.z, modelBounds.max.z + distance.z));
-
-            diff = Vector3.Distance(model.transform.position, newPosition);
-
-            withinBounds = roomBounds.Contains(newPosition);
-        } while (!(diff == 1.5f && withinBounds));
-
-
-        Debug.Log(diff);
-        return newPosition; // otherwise return the new position
-        
-    }
-
+ 
     public static Vector3 RandomPointInBounds(Bounds bounds)
     {
         return new Vector3(
@@ -195,72 +199,38 @@ public class ModelManager : MonoBehaviour
 
     public void singleEnvironment()
     {
-        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
+        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
         StartCoroutine(buildEnv());
     }
 
     public void randomizeEnvironment()
     {
-        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
         StartCoroutine(buildEnv());
     }
 
 
     IEnumerator buildEnv()
     {
-        clearEnvironment();
+        Debug.Log("buildEnv");
+        currentPipeline.init(modelsPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, modelCountInputField.text, categoryCountInputField.text);
 
-        //String datapath = modelsPathField.text;
-        //String roomPath = roomPathField.text;
-        //String texturePath = materialPathField.text;
+        for (int i = 0; i < currentPipeline.getModelCount(); i++) {
+            clearEnvironment();
 
-        String datapath = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/";
-        String roomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
-        String texturePath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
-        currentPipeline.init(datapath, roomPath, texturePath, categoriesInputField);
+            room = currentPipeline.getRoomObject();
+            currentPipeline.setupRoom(room);
 
-        room = currentPipeline.getRoomObject();
-        currentPipeline.setupRoom(room);
+            model = currentPipeline.getModelObject();
+            currentPipeline.setupModel(model);
 
-        model = currentPipeline.getModelObject();
-        currentPipeline.setupModel(model);
+            roomHelper.randomiseSkybox(skyBoxList);
 
-        roomHelper.randomiseSkybox(skyBoxList);
+            currentPipeline.setupCamera(model);
+            replaceModel(room, model,currentPipeline.getModelCategory());
 
-        //randomizeCamera(room, model, false);
-        replaceModel(room, model, "chair");
-
-        yield return room;
-    }
-
-
-
-    void randomizeCamera(GameObject room,GameObject targetObject, bool withBounds)
-    {
-        Renderer renderer = targetObject.gameObject.GetComponent<MeshRenderer>();
-        bool randomized = false;
-        do
-        {
-            if (withBounds)
-            {
-                var currentBounds = modelHelper.GetMeshHierarchyBounds(targetObject);
-                MainCamera.transform.position = RandomPointInBounds(currentBounds);
-            }
-            else
-            {
-                //MainCamera.transform.position = RandomPointTransform(targetObject.transform.position, new Vector3(1f,1f,1f)); //TODO: make distance userinput
-                MainCamera.transform.position = RandomPoint(room, targetObject, new Vector3(1f, 1f, 1f)); //TODO: make distance userinput
-
-            }
-
-            randomized = IsVisibleFrom(renderer, MainCamera);
-        } while(!randomized);
-    }
-
-    public bool IsVisibleFrom(Renderer renderer, Camera camera)
-    {
-        Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
-        return GeometryUtility.TestPlanesAABB(planes, renderer.bounds);
+            yield return room;
+        }
     }
 
     void updateRoomPathList(string rootRoomPath)
@@ -284,7 +254,14 @@ public class ModelManager : MonoBehaviour
         StartCoroutine(LoadObjects());
     }
 
-   
+    // Invoked when the value of the text field changes.
+    public void cameraParameterChanged()
+    {
+        Debug.Log("cameraParameterChanged");
+        cameraHelper = null;
+        cameraHelper = new CameraHelper(MainCamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
+    }
+
 
     IEnumerator LoadObjects()
     {

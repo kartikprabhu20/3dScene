@@ -11,8 +11,12 @@ public abstract class AbstractPipeline
     public abstract GameObject getRoomObject();
     public abstract GameObject getModelObject();
     public abstract int getModelCount();
+    public abstract void setModelCount(int modelCount);
+    public abstract string getModelCategory();
 
-    public abstract void init(string dataPath, string rootRoomPath, string rootMaterialPath, InputField categoriesInputField);
+
+
+    public abstract void init(string dataPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string totalModelCount, string imagesPerCategory);
     public abstract void setupRoom(GameObject room);
     public abstract void setupModel(GameObject model);
     public abstract void setupCamera(GameObject model);
@@ -27,8 +31,11 @@ public class Pipeline : AbstractPipeline
     protected RoomHelper roomHelper;
     protected ModelHelper modelHelper;
     protected CameraHelper cameraHelper;
+    protected LightManager lightHelper;
 
-    protected int totalModelCount;
+    protected int totalModelCount = 0;
+    protected int imagesPerCategory = 0;
+    protected int currentModelNumber = 0;
 
     protected List<string> roomPaths = new List<string>();
     protected List<string> roomMtlPaths = new List<string>();
@@ -39,8 +46,11 @@ public class Pipeline : AbstractPipeline
 
     protected string[] categories;
     protected string rootRoomPath, rootMaterialPath, dataPath;
-    private GameObject room, model;
+    protected GameObject currentRoom, currentModel;
     protected System.Random random = new System.Random();
+
+    protected const string default_room_path = "Assets/resources/default_room/";
+    protected const string default_model_path = "Assets/resources/default_model/model.obj";
 
     public override int PipeLineType { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
 
@@ -57,10 +67,10 @@ public class Pipeline : AbstractPipeline
 
     void updateRoomPathList(string rootRoomPath)
     {
+        Debug.Log("updateRoomPathList");
         string[] dirList = Directory.GetDirectories(rootRoomPath);
         foreach (string dir in dirList)
         {
-            Debug.Log("test");
             roomPaths.AddRange(Directory.GetFiles(dir, "*.obj"));
             roomMtlPaths.AddRange(Directory.GetFiles(dir, "*.mtl"));
         }
@@ -69,14 +79,27 @@ public class Pipeline : AbstractPipeline
         roomMtlPaths.AddRange(Directory.GetFiles(rootRoomPath, "*.mtl"));
     }
 
-    public override void init(string dataPath, string rootRoomPath, string rootMaterialPath, InputField categoriesInputField)
+    public override void init(string dataPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string totalModelCount, string imagesPerCategory)
     {
+        Debug.Log("init1");
+
         this.dataPath = dataPath;
         this.rootMaterialPath = rootMaterialPath;
         this.rootRoomPath = rootRoomPath;
-        this.categories = categoriesInputField.text.Split(',');
+        this.categories = categoriesInput.Split(',');
 
         updateRoomPathList(rootRoomPath);
+
+        if (!String.IsNullOrEmpty(totalModelCount))
+        {
+            this.totalModelCount = Int32.Parse(totalModelCount);
+        }
+
+        if (!String.IsNullOrEmpty(imagesPerCategory))
+        {
+            this.imagesPerCategory = Int32.Parse(imagesPerCategory);
+        }
+
     }
 
     public override void execute()
@@ -104,7 +127,18 @@ public class Pipeline : AbstractPipeline
         return totalModelCount;
     }
 
+    public override void setModelCount(int modelCount)
+    {
+        this.totalModelCount = modelCount;
+    }
+
     public override void setupCamera(GameObject model)
+    {
+        cameraHelper.randomizeCamera(currentRoom, model, true);
+        lightHelper.randomizeLight(model);
+    }
+
+    public override string getModelCategory()
     {
         throw new NotImplementedException();
     }
