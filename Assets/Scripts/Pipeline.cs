@@ -20,6 +20,7 @@ public abstract class AbstractPipeline
     public abstract void setupRoom(GameObject room);
     public abstract void setupModel(GameObject model);
     public abstract void setupCamera(GameObject model);
+    public abstract List<GameObject> setupLigtSources(GameObject model, GameObject room);
 
     public abstract void execute();
 
@@ -135,7 +136,11 @@ public class Pipeline : AbstractPipeline
     public override void setupCamera(GameObject model)
     {
         cameraHelper.randomizeCamera(currentRoom, model, true);
-        lightHelper.randomizeLight(model);
+    }
+
+    public override List<GameObject> setupLigtSources(GameObject model, GameObject room)
+    { 
+        return lightHelper.randomizeLight(model,room);
     }
 
     public override string getModelCategory()

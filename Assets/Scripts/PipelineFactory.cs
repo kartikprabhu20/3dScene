@@ -20,10 +20,8 @@
     {
         lock (padlock)
         {
-            if (instance == null)
-            {
-                instance = new PipelineFactory(roomHelper, modelHelper,cameraHelper, lightHelper);
-            }
+
+            instance = new PipelineFactory(roomHelper, modelHelper,cameraHelper, lightHelper);
             return instance;
         }
     }

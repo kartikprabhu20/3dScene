@@ -5,6 +5,16 @@ using UnityEngine;
 
 public class Helper
 {
+
+    public void attachMeshRenderer(GameObject gameObject)
+    {
+        Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
+        foreach (Transform child in allChildren)
+        {
+            child.gameObject.AddComponent<MeshRenderer>();
+        }
+    }
+
     public void attachMeshColliders(GameObject gameObject)
     {
         Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();

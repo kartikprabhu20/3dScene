@@ -2840,7 +2840,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!108 &705507994
 Light:
   m_ObjectHideFlags: 0
@@ -2859,7 +2859,7 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 2
+    m_Type: 1
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -4765,7 +4765,6 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 7520556229fd54bdf9d1509bd230f214, type: 2}
   shader: {fileID: 4800000, guid: 86dca5adee1ac43bfad8c1f21311e882, type: 3}
   datapath: /Users/apple/OVGU/Thesis/Dataset/pix3d/model
-  testmodel: {fileID: 2002470109}
 --- !u!1 &1211925714
 GameObject:
   m_ObjectHideFlags: 0
@@ -6146,7 +6145,7 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 0
+    m_Type: 1
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -7685,12 +7684,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b8fa7378ff9814e0baa0681fbc081d60, type: 3}
---- !u!1 &2002470109 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: b8fa7378ff9814e0baa0681fbc081d60,
-    type: 3}
-  m_PrefabInstance: {fileID: 2002470108}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2019342658
 PrefabInstance:
   m_ObjectHideFlags: 0

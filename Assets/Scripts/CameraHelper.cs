@@ -4,8 +4,8 @@ using UnityEngine;
 public class CameraHelper: Helper
 {
     private Camera mainCamera;
-    private float minDistance = 1.0f;
-    private float maxDistance= 2.0f;
+    private float minDistance = 0.5f;
+    private float maxDistance= 0.75f;
     private float minHeight = 0.25f;
 
     public CameraHelper(Camera mainCamera, string minDistance, string maxDistance, string minHeight)
@@ -45,9 +45,6 @@ public class CameraHelper: Helper
             //    mainCamera.transform.position = RandomPoint(room, targetObject, new Vector3(1f, 1f, 1f)); //TODO: make distance userinput
 
             //}
-            Debug.Log("minDistance");
-            Debug.Log(this.minDistance);
-            Debug.Log(this.maxDistance);
 
             mainCamera.transform.position = RandomPointInAnnulus(targetObject.transform.position,this.minDistance,this.maxDistance);
             mainCamera.transform.LookAt(targetObject.transform);

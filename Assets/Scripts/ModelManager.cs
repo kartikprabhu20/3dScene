@@ -12,6 +12,7 @@ public class ModelManager : MonoBehaviour
     public Camera MainCamera;
     public GameObject lightSources;
     public Light lightSource;
+
     public int lightIntensityLow;
     public int lightIntensityHigh;
     public int lightXRotationLow;
@@ -46,7 +47,6 @@ public class ModelManager : MonoBehaviour
 
     GameObject model;
 
-    public GameObject testmodel;
     private System.Random random = new System.Random();
 
     private List<string> roomPaths = new List<string>();
@@ -58,6 +58,8 @@ public class ModelManager : MonoBehaviour
     private LightManager lightHelper;
 
     private Pipeline currentPipeline;
+
+    private List<GameObject> lightSourceList = new List<GameObject>();
 
 
     // Start is called before the first frame update
@@ -106,53 +108,26 @@ public class ModelManager : MonoBehaviour
 
     public void test()
     {
+        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
+        currentPipeline.init(modelsPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, modelCountInputField.text, categoryCountInputField.text);
 
-        string rootRoomPath = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/rooms/"; //TODO: globalise
-        updateRoomPathList(rootRoomPath);
+        clearEnvironment();
 
-        for (int i = 0; i < roomPaths.Count; i++)
-        {
-            string objPath = roomPaths[i];
-            string mtlPath = roomMtlPaths[i];
+        room = currentPipeline.getRoomObject();
+        currentPipeline.setupRoom(room);
 
-            room = new OBJLoader().Load(objPath, mtlPath);
+        model = currentPipeline.getModelObject();
+        currentPipeline.setupModel(model);
 
-            //Debug.Log("==========================");
+        roomHelper.randomiseSkybox(skyBoxList);
+        lightSourceList = currentPipeline.setupLigtSources(model, room);
 
-            //Transform[] allChildren = room.GetComponentsInChildren<Transform>();
-
-            //List<string> objectList = new List<string>();
-            //foreach (Transform child in allChildren)
-            //{
-            //    //Debug.Log(child.name);
-            //    objectList.Add(child.name);
-            //}
-            //string result = string.Join(",", objectList.ToArray());
-            //Debug.Log(result);
-
-            //clearEnvironment();
-            //Debug.Log("==========================");
-
-            Debug.Log("==========================");
-
-           
-
-            var currentBounds = roomHelper.GetMeshHierarchyBounds(room);
-            var currentSize = currentBounds.size;
-            Debug.Log(currentSize.x);
-            Debug.Log(currentSize.y);
-            Debug.Log(currentSize.z);
-            //clearEnvironment();
-
-            //Debug.Log(RandomPointInBounds(currentBounds));
-            MainCamera.transform.position = RandomPointInBounds(currentBounds);
-
-            Debug.Log("==========================");
-            break;
-
-        }
+        currentPipeline.setupCamera(model);
+        replaceModel(room, model, currentPipeline.getModelCategory());
 
     }
+
+   
 
     public static Vector3 RandomPointTransform(Vector3 position, Vector3 distance)
     {
@@ -193,6 +168,11 @@ public class ModelManager : MonoBehaviour
     {
         clearGameObject(room);
         clearGameObject(model);
+
+        foreach(GameObject gameObject in lightSourceList)
+        {
+            clearGameObject(gameObject);
+        }
     }
 
 
@@ -225,6 +205,7 @@ public class ModelManager : MonoBehaviour
             currentPipeline.setupModel(model);
 
             roomHelper.randomiseSkybox(skyBoxList);
+            lightSourceList = currentPipeline.setupLigtSources(model,room);
 
             currentPipeline.setupCamera(model);
             replaceModel(room, model,currentPipeline.getModelCategory());

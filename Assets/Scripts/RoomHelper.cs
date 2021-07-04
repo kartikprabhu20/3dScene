@@ -97,7 +97,7 @@ public class RoomHelper: Helper
         foreach (Transform child in allChildren)
         {
             string textureFolder = rootTexturePath + Path.DirectorySeparatorChar + child.name.Split('.')[0];
-            if (dirList.Contains(textureFolder))
+            if (dirList.Contains(textureFolder))//Check if there is a texturefolder with name same as category
             {
                 string[] textureList = Directory.GetFiles(textureFolder);
                 Renderer rend = child.GetComponent<Renderer>();
@@ -105,10 +105,15 @@ public class RoomHelper: Helper
                 {
                     //Debug.Log("applying texture");
                     if (!textureDictionary.ContainsKey(child.name))
-                        textureDictionary.Add(child.name, textureList[random.Next(textureList.Length)]);
+                        textureDictionary.Add(child.name, textureList[random.Next(textureList.Length)]);//As we iterate through the texturefolder add it to dictionary as a cache
                     {
                     }
                     rend.material.mainTexture = loadTexture(textureDictionary[child.name]);
+
+                    if (child.name == "floor") {
+                        rend.material.mainTextureScale = new Vector2(10, 10);//Tiling 10x10
+                    }
+
                 }
                 //break;
             }
