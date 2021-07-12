@@ -5,8 +5,8 @@ using UnityEngine;
 public class LightManager : Helper
 {
     private GameObject lightSources;
-    private int lightIntensityLow = 1;
-    private int lightIntensityHigh = 7;
+    private float lightIntensityLow = 0;
+    private float lightIntensityHigh = 1;
     private float indoorLightIntensityLow = 0f;
     private float indoorLightIntensityHigh = 1.5f;
     private int lightXRotationLow= 0;
@@ -27,39 +27,63 @@ public class LightManager : Helper
 
     public List<GameObject> randomizeLight(GameObject curretModel,GameObject room)
     {
-        GameObject sunLight = lightSources.gameObject.transform.Find("Directional Light").gameObject;
-        GameObject alternate = lightSources.gameObject.transform.Find("Point Light").gameObject;
         List<GameObject> lightSourceList = new List<GameObject>();
 
 
-        if (Random.value < 0.5f)    
+        string[] allChildren = {"PointLight","SunLight","SpotLight"};
+        int randomChild = Random.Range(0, allChildren.Length);
+
+        switch (allChildren[randomChild])
         {
-            var currentBounds = GetMeshHierarchyBounds(room);
-            int lightCount = Random.Range(0, 5);
+            case "PointLight":
+                var currentBounds = GetMeshHierarchyBounds(room);
+                int lightCount = Random.Range(0, 5);
 
-            List<Vector3> lightPositions = getLightPositions(lightCount, currentBounds.min.x, currentBounds.max.x, currentBounds.min.z, currentBounds.max.z, currentBounds.max.y);
-            float lightIntensity = Random.Range(indoorLightIntensityLow, indoorLightIntensityHigh);
+                List<Vector3> lightPositions = getLightPositions(lightCount, currentBounds.min.x, currentBounds.max.x, currentBounds.min.z, currentBounds.max.z, currentBounds.max.y);
+                float lightIntensity = Random.Range(indoorLightIntensityLow, indoorLightIntensityHigh);
 
-            foreach (Vector3 position in lightPositions)
-            {
-                GameObject light = getLightSources().gameObject.transform.Find("Point Light").gameObject;
-                GameObject lightSource = GameObject.Instantiate(light);
+                foreach (Vector3 position in lightPositions)
+                {
+                    GameObject light = getLightSources().gameObject.transform.Find("PointLight").gameObject;
+                    light = GameObject.Instantiate(light);
+                    light.SetActive(true);
+                    light.transform.position = position;
+                    light.GetComponent<Light>().intensity = lightIntensity;
+
+                    lightSourceList.Add(light);
+                }
+                break;
+
+            case "SunLight":
+                //sun light
+                GameObject sunLight = lightSources.gameObject.transform.Find("SunLight").gameObject;
+                sunLight.GetComponent<Light>().intensity = Random.Range(lightIntensityLow, lightIntensityHigh);
+                sunLight.gameObject.transform.eulerAngles = new Vector3(Random.Range(lightXRotationLow, lightXRotationHigh), Random.Range(lightYRotationLow, lightYRotationHigh), 0);
+
+                GameObject lightSource = GameObject.Instantiate(sunLight);
                 lightSource.SetActive(true);
-                lightSource.transform.position = position;
-                lightSource.GetComponent<Light>().intensity = lightIntensity;
-
                 lightSourceList.Add(lightSource);
-            }
-        }
-        else
-        {
-            //sun light
-            sunLight.GetComponent<Light>().intensity = Random.Range(lightIntensityLow, lightIntensityHigh);
-            sunLight.gameObject.transform.eulerAngles = new Vector3(Random.Range(lightXRotationLow, lightXRotationHigh), Random.Range(lightYRotationLow, lightYRotationHigh), 0);
+                break;
 
-            GameObject lightSource = GameObject.Instantiate(sunLight);
-            lightSource.SetActive(true);
-            lightSourceList.Add(lightSource);
+            case "SpotLight":
+                Debug.Log("SpotLight");
+                GameObject spotLight = lightSources.gameObject.transform.Find("SpotLight").gameObject;
+                GameObject spotSource = GameObject.Instantiate(spotLight);
+                spotSource.SetActive(true);
+                spotSource.GetComponent<Light>().intensity = Random.Range(indoorLightIntensityLow, indoorLightIntensityHigh);
+
+                var modelBounds = GetMeshHierarchyBounds(curretModel);
+                spotSource.transform.position = new Vector3(curretModel.transform.position.x, modelBounds.max.y + 1.5f, curretModel.transform.position.z);
+
+                Debug.Log(spotLight.transform.position);
+                
+                lightSourceList.Add(spotSource);
+                break;
+
+            case "SpotLightCamera":
+                //TODO: add light from camera
+                break;
+
         }
 
         return lightSourceList;
