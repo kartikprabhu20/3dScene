@@ -18,9 +18,9 @@ public class Helper
     public void attachMeshColliders(GameObject gameObject)
     {
         Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
-        foreach (Transform child in allChildren)
+        for (int i = 1; i < allChildren.Length; i++)//Skip first child as parent gets returned
         {
-            attachMeshCollider(child.gameObject);
+                attachMeshCollider(allChildren[i].gameObject);
         }
 
         attachMeshCollider(gameObject);

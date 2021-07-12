@@ -17,10 +17,9 @@ public class RoomPipeline : Pipeline
         base.lightHelper = lightHelper;
     }
 
-    public override void init(string dataPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string totalModelCount, string imagesPerCategory)
+    public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory)
     {
-        base.init(dataPath, rootRoomPath, rootMaterialPath, categoriesInput, totalModelCount, imagesPerCategory);
-        int modelCount = 0;
+        base.init(dataPath, outputPath, rootRoomPath, rootMaterialPath, categoriesInput, imagesPerCategory);
 
         foreach (string category in this.categories)
         {
@@ -33,7 +32,6 @@ public class RoomPipeline : Pipeline
             foreach (string folderPath in folders)
             {
                 catagoryCount++;
-                modelCount++;
 
                 string objPath = Directory.GetFiles(folderPath, "*.obj")[0];
                 string mtlPath = "";
@@ -84,9 +82,9 @@ public class RoomPipeline : Pipeline
 
     public override GameObject getModelObject()
     {
+        base.currentModelNumber += 1;
         string objPath = modelPaths[base.currentModelNumber];
         string mtlPath = modelMtlPaths[base.currentModelNumber];
-        base.currentModelNumber += 1;
 
         try
         {
@@ -98,10 +96,5 @@ public class RoomPipeline : Pipeline
         }
 
         return base.currentModel;
-    }
-
-    public override string getModelCategory()
-    {
-        return modelCategories[base.currentModelNumber];
     }
 }

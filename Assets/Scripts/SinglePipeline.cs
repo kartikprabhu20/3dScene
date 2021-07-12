@@ -17,26 +17,26 @@ public class SinglePipeline : Pipeline
         base.lightHelper = lightHelper;
     }
 
-    public override void init(string dataPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string totalModelCount, string imagesPerCategory)
+    public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory)
     {
-        base.init(dataPath, default_room_path, rootMaterialPath, categoriesInput, totalModelCount, imagesPerCategory);
+        base.init(dataPath,outputPath, default_room_path, rootMaterialPath, categoriesInput, imagesPerCategory);
 
-        int modelCount = 0;
-
+        Debug.Log("init");
         foreach (string category in this.categories)
         {
-            Debug.Log("category");
-            Debug.Log(category);
             int catagoryCount = 0;
             string categoryPath = this.dataPath + Path.DirectorySeparatorChar + category;
             string[] folders = Directory.GetDirectories(categoryPath, "*", System.IO.SearchOption.TopDirectoryOnly);
 
-            while (catagoryCount != this.imagesPerCategory)
+            while (!this.incrementCategoryCounter || catagoryCount != this.imagesPerCategory)
             {
                 foreach (string folderPath in folders)
                 {
+                    //Debug.Log("category: " + category+" /// folderPath: " + folderPath);
+                    //Debug.Log("modelName: " + new DirectoryInfo(folderPath).Name);
+                    //Debug.Log(modelCategories.Count);
+
                     catagoryCount++;
-                    modelCount++;
 
                     string objPath = Directory.GetFiles(folderPath, "*.obj")[0];
                     string mtlPath = "";
@@ -51,9 +51,11 @@ public class SinglePipeline : Pipeline
                     modelPaths.Add(objPath);
                     modelMtlPaths.Add(mtlPath);
                     modelCategories.Add(category);
+                    modelNames.Add(new DirectoryInfo(folderPath).Name);
+
                     this.totalModelCount += 1;
 
-                    if(catagoryCount == this.imagesPerCategory)
+                    if (this.incrementCategoryCounter && catagoryCount == this.imagesPerCategory)
                     {
                         break;
                     }
@@ -63,6 +65,12 @@ public class SinglePipeline : Pipeline
                     //Debug.Log("modelCount");
                     //Debug.Log(modelCount);
                 }
+
+                if (!this.incrementCategoryCounter)
+                {
+                    break;
+                }
+
             }
 
         }
@@ -78,7 +86,7 @@ public class SinglePipeline : Pipeline
     {
         string objPath = base.roomPaths[0];
         string mtlPath = base.roomMtlPaths.Count > 0 ? base.roomMtlPaths[0] : " ";
-
+        Debug.Log(objPath);
         try
         {
             base.currentRoom = new OBJLoader().Load(objPath, mtlPath);
@@ -95,12 +103,12 @@ public class SinglePipeline : Pipeline
 
         if (string.IsNullOrEmpty(base.dataPath))
         {
-            this.currentModelNumber = 0;
+            this.currentModelNumber = -1;
         }
+        base.currentModelNumber += 1;
         string objPath = modelPaths[this.currentModelNumber];
         string mtlPath = modelMtlPaths[this.currentModelNumber];
-        base.currentModelNumber += 1;
-
+        
         try
         {
             base.currentModel = new OBJLoader().Load(objPath, mtlPath);
@@ -113,8 +121,4 @@ public class SinglePipeline : Pipeline
         return base.currentModel;
     }
 
-    public override string getModelCategory()
-    {
-        return modelCategories[base.currentModelNumber];
-    }
 }

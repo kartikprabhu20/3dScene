@@ -31,8 +31,7 @@ public class RoomHelper: Helper
     {
         this.shader = shader;
     }
-
-    
+ 
 
     public void randomiseSkybox(List<Material> skyBoxList)
     {
@@ -60,6 +59,8 @@ public class RoomHelper: Helper
         {
             renameGameobject(child.gameObject);
         }
+
+        //Rigidbody gameObjectsRigidBody = roomModel.AddComponent<Rigidbody>();
     }
 
     private void renameGameobject(GameObject gameobject)

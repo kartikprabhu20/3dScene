@@ -16,7 +16,7 @@ using System.IO;
 //      2) rendering several cameras with different aspect ratios - vectors do stretch to the sides of the screen
 
 [RequireComponent(typeof(Camera))]
-public class CustomImageSynthesis
+public class CustomImageSynthesis : MonoBehaviour
 {
     [Header("Shader Setup")]
     public Shader uberReplacementShader;
@@ -25,14 +25,14 @@ public class CustomImageSynthesis
 
     [Header("Save Image Capture")]
     public bool saveImage = true;
-    public bool saveIdSegmentation = false;
+    public bool saveIdSegmentation = true;
     public bool saveLayerSegmentation = true;
     public bool saveDepth = true;
-    public bool saveNormals = false;
+    public bool saveNormals = true;
     public bool saveOpticalFlow;
     public string filepath = "..\\Captures";
     public string filename = "test.png";
-    public Camera mainCamera;
+    private Camera mainCamera;
 
     // pass configuration
     private CapturePass[] capturePasses = new CapturePass[] {
@@ -71,8 +71,12 @@ public class CustomImageSynthesis
 
         // use real camera to capture final image
         capturePasses[0].camera = mainCamera.GetComponent<Camera>();
-        for (int q = 1; q < capturePasses.Length; q++)
+        Debug.Log("caputrepasses");
+        Debug.Log(capturePasses.Length);
+        for (int q = 1; q < capturePasses.Length; q++) { 
+            Debug.Log(capturePasses[q].name);
             capturePasses[q].camera = CreateHiddenCamera(capturePasses[q].name);
+        }
 
         OnCameraChange();
         OnSceneChange();
@@ -231,6 +235,8 @@ public class CustomImageSynthesis
     {
         foreach (var pass in capturePasses)
         {
+            Debug.Log(pass.name);
+
             // Perform a check to make sure that the capture pass should be saved
             if (
                 (pass.name == "_img" && saveImage) ||
@@ -241,10 +247,14 @@ public class CustomImageSynthesis
                 (pass.name == "_flow" && saveOpticalFlow)
             )
             {
-                if(pass.name == "_layer")
+                if (pass.name == "_layer")
                 {
                     model.GetComponent<Rigidbody>().useGravity = false;
-                    room.gameObject.active = false;
+                    room.gameObject.SetActive(false);
+                }
+                else
+                {
+                    room.gameObject.SetActive(true);
                 }
                 Save(pass.camera, filenameWithoutExtension + pass.name + filenameExtension, width, height, pass.supportsAntialiasing, pass.needsRescale);
                 room.gameObject.active = true;

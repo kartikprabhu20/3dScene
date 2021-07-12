@@ -66,7 +66,7 @@ public class ModelManager : MonoBehaviour
     void Start()
     {
         roomHelper = new RoomHelper(shader);
-        modelHelper = new ModelHelper();
+        modelHelper = new ModelHelper(shader);
         lightHelper = new LightManager(lightSources);
         cameraHelper = new CameraHelper(MainCamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
         currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE); //Defualt
@@ -79,10 +79,11 @@ public class ModelManager : MonoBehaviour
         modelsPathField.text = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/";
         roomPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
         materialPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
+        outputPathField.text = "/Users/apple/OVGU/Thesis/s2r3dfree/";
         modelCountInputField.text = "10";
 
         cameraMinInputField.text = "1";
-        cameraMaxInputField.text = "1.5";
+        cameraMaxInputField.text = "1.2";
         cameraHeightInputField.text = "0.25";
 
         //===============================TODO: remove
@@ -109,7 +110,7 @@ public class ModelManager : MonoBehaviour
     public void test()
     {
         currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
-        currentPipeline.init(modelsPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, modelCountInputField.text, categoryCountInputField.text);
+        currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text);
 
         clearEnvironment();
 
@@ -127,26 +128,6 @@ public class ModelManager : MonoBehaviour
 
     }
 
-   
-
-    public static Vector3 RandomPointTransform(Vector3 position, Vector3 distance)
-    {
-        return new Vector3(
-            UnityEngine.Random.Range(position.x - distance.x, position.x + distance.x) + distance.x,
-            UnityEngine.Random.Range(position.y , position.y + distance.y) + distance.y,
-            UnityEngine.Random.Range(position.z - distance.z, position.z + distance.z) + distance.z
-        );
-    }
-
- 
-    public static Vector3 RandomPointInBounds(Bounds bounds)
-    {
-        return new Vector3(
-            UnityEngine.Random.Range(bounds.min.x, bounds.max.x),
-            UnityEngine.Random.Range(bounds.min.y, bounds.max.y),
-            UnityEngine.Random.Range(bounds.min.z, bounds.max.z)
-        );
-    }
 
     public void clearGameObject(GameObject gameObject)
     {
@@ -193,7 +174,7 @@ public class ModelManager : MonoBehaviour
     IEnumerator buildEnv()
     {
         Debug.Log("buildEnv");
-        currentPipeline.init(modelsPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, modelCountInputField.text, categoryCountInputField.text);
+        currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text);
 
         for (int i = 0; i < currentPipeline.getModelCount(); i++) {
             clearEnvironment();
@@ -207,27 +188,23 @@ public class ModelManager : MonoBehaviour
             roomHelper.randomiseSkybox(skyBoxList);
             lightSourceList = currentPipeline.setupLigtSources(model,room);
 
+            replaceModel(room, model, currentPipeline.getModelCategory());
             currentPipeline.setupCamera(model);
-            replaceModel(room, model,currentPipeline.getModelCategory());
+
+            currentPipeline.execute(this);
+
+
+            //Wait till last save is complete
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
+            //yield return new WaitForEndOfFrame();
+            //yield return new WaitForEndOfFrame();
 
             yield return room;
         }
     }
 
-    void updateRoomPathList(string rootRoomPath)
-    {
-        string[] dirList = Directory.GetDirectories(rootRoomPath);
-
-        foreach (string dir in dirList)
-        {
-            roomPaths.AddRange(Directory.GetFiles(dir, "*.obj"));
-            roomMtlPaths.AddRange(Directory.GetFiles(dir, "*.mtl"));
-
-            //Directory.GetFiles(dir, "*.obj").CopyTo(roomPaths, roomPaths.Length);
-            //Directory.GetFiles(dir, "*.mtl").CopyTo(roomMtlPaths, roomMtlPaths.Length);
-        }
-
-    }
 
     public void createDataset()
     {
@@ -247,7 +224,7 @@ public class ModelManager : MonoBehaviour
     IEnumerator LoadObjects()
     {
         int categoryIndex = 0;
-        foreach(string category in categories)
+        foreach (string category in categories)
         {
             //Debug.Log(category);
             string categoryPath = datapath + Path.DirectorySeparatorChar + category;
@@ -340,7 +317,9 @@ public class ModelManager : MonoBehaviour
 
                     CustomImageSynthesis customImageSynthesis = new CustomImageSynthesis(MainCamera);
 
-                    string filePath = folderPath + Path.DirectorySeparatorChar + "img";
+                    //string filePath = folderPath + Path.DirectorySeparatorChar + "img";
+                    string filePath = outputPathField.text + Path.DirectorySeparatorChar + "img";
+
                     if (!Directory.Exists(filePath))
                     {
                         Directory.CreateDirectory(filePath);

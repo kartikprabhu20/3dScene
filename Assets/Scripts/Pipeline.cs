@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,16 +15,15 @@ public abstract class AbstractPipeline
     public abstract int getModelCount();
     public abstract void setModelCount(int modelCount);
     public abstract string getModelCategory();
+    public abstract string getModelName();
 
-
-
-    public abstract void init(string dataPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string totalModelCount, string imagesPerCategory);
+    public abstract void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory);
     public abstract void setupRoom(GameObject room);
     public abstract void setupModel(GameObject model);
     public abstract void setupCamera(GameObject model);
     public abstract List<GameObject> setupLigtSources(GameObject model, GameObject room);
 
-    public abstract void execute();
+    public abstract void execute(MonoBehaviour mono);
 
 }
 
@@ -33,10 +34,12 @@ public class Pipeline : AbstractPipeline
     protected ModelHelper modelHelper;
     protected CameraHelper cameraHelper;
     protected LightManager lightHelper;
+    protected CustomImageSynthesis customImageSynthesis;
 
     protected int totalModelCount = 0;
     protected int imagesPerCategory = 0;
-    protected int currentModelNumber = 0;
+    protected int currentModelNumber = -1;
+    protected bool incrementCategoryCounter = false;
 
     protected List<string> roomPaths = new List<string>();
     protected List<string> roomMtlPaths = new List<string>();
@@ -44,9 +47,10 @@ public class Pipeline : AbstractPipeline
     protected List<string> modelPaths = new List<string>();
     protected List<string> modelMtlPaths = new List<string>();
     protected List<string> modelCategories = new List<string>();
+    protected List<string> modelNames = new List<string>();
 
     protected string[] categories;
-    protected string rootRoomPath, rootMaterialPath, dataPath;
+    protected string rootRoomPath, rootMaterialPath, dataPath,outputPath;
     protected GameObject currentRoom, currentModel;
     protected System.Random random = new System.Random();
 
@@ -68,7 +72,7 @@ public class Pipeline : AbstractPipeline
 
     void updateRoomPathList(string rootRoomPath)
     {
-        Debug.Log("updateRoomPathList");
+        //Debug.Log("updateRoomPathList");
         string[] dirList = Directory.GetDirectories(rootRoomPath);
         foreach (string dir in dirList)
         {
@@ -80,33 +84,52 @@ public class Pipeline : AbstractPipeline
         roomMtlPaths.AddRange(Directory.GetFiles(rootRoomPath, "*.mtl"));
     }
 
-    public override void init(string dataPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string totalModelCount, string imagesPerCategory)
+    public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory)
     {
-        Debug.Log("init1");
+        //Debug.Log("init1");
 
         this.dataPath = dataPath;
+        this.outputPath = outputPath;
         this.rootMaterialPath = rootMaterialPath;
         this.rootRoomPath = rootRoomPath;
         this.categories = categoriesInput.Split(',');
 
         updateRoomPathList(rootRoomPath);
 
-        if (!String.IsNullOrEmpty(totalModelCount))
-        {
-            this.totalModelCount = Int32.Parse(totalModelCount);
-        }
-
         if (!String.IsNullOrEmpty(imagesPerCategory))
         {
             this.imagesPerCategory = Int32.Parse(imagesPerCategory);
+            this.incrementCategoryCounter = true;
         }
+
+        this.customImageSynthesis = new CustomImageSynthesis(cameraHelper.getMainCamera());
 
     }
 
-    public override void execute()
+    public override void execute(MonoBehaviour mono)
     {
+        string destinationPath = outputPath + Path.DirectorySeparatorChar + getModelCategory() + Path.DirectorySeparatorChar + getModelName();
 
-        
+        //Debug.Log(getModelCategory()+ " "+ getModelName());
+        //Debug.Log(destinationPath);
+        //Debug.Log(getModelCategory());
+
+        Directory.CreateDirectory(destinationPath);
+        var files = Directory.GetFiles(destinationPath, "*.*", SearchOption.AllDirectories);
+        int fileName = -1;
+        foreach (string file in files)
+        {
+            Debug.Log(fileName);
+            //string[] numbers = Regex.Split(file, @"\D+");
+            string number = Regex.Match(file, @"\d+").Value;
+
+            fileName = (fileName <= Int32.Parse(number)) ? Int32.Parse(number) : fileName;
+        }
+
+        fileName = (fileName == -1) ? 0 : fileName;
+
+        this.customImageSynthesis.OnSceneChange();
+        mono.StartCoroutine(this.customImageSynthesis.Save(fileName.ToString(), currentRoom, currentModel, -1, -1, destinationPath));
 
     }
 
@@ -115,7 +138,6 @@ public class Pipeline : AbstractPipeline
         roomHelper.changeShader(room);
         roomHelper.preprocessRoom(room);
         roomHelper.applyTextures(room, rootMaterialPath);
-        roomHelper.attachMeshColliders(room);
     }
 
     public override void setupModel(GameObject model)
@@ -145,7 +167,12 @@ public class Pipeline : AbstractPipeline
 
     public override string getModelCategory()
     {
-        throw new NotImplementedException();
+        return modelCategories[currentModelNumber];
+    }
+
+    public override string getModelName()
+    {
+        return modelNames[currentModelNumber];
     }
 }
 
