@@ -4,8 +4,8 @@ using UnityEngine;
 public class CameraHelper: Helper
 {
     private Camera mainCamera;
-    private float minDistance = 0.5f;
-    private float maxDistance= 0.75f;
+    private float minDistance = 1.0f;
+    private float maxDistance= 1.2f;
     private float minHeight = 0.25f;
 
     public CameraHelper(Camera mainCamera, string minDistance, string maxDistance, string minHeight)
@@ -26,6 +26,11 @@ public class CameraHelper: Helper
             this.minHeight = float.Parse(minHeight);
         }
 
+    }
+
+    public Camera getMainCamera()
+    {
+        return this.mainCamera;
     }
 
     public void randomizeCamera(GameObject room, GameObject targetObject, bool withBounds)
