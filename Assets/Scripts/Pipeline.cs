@@ -116,20 +116,20 @@ public class Pipeline : AbstractPipeline
 
         Directory.CreateDirectory(destinationPath);
         var files = Directory.GetFiles(destinationPath, "*.*", SearchOption.AllDirectories);
-        int fileName = -1;
-        foreach (string file in files)
+        int targetName = -1;
+        string str2 = string.Empty;
+        foreach (string filePath in files)
         {
-            Debug.Log(fileName);
-            //string[] numbers = Regex.Split(file, @"\D+");
-            string number = Regex.Match(file, @"\d+").Value;
-
-            fileName = (fileName <= Int32.Parse(number)) ? Int32.Parse(number) : fileName;
+            string fileName = Path.GetFileName(filePath);
+            string number = new String(fileName.Where(Char.IsDigit).ToArray());
+            Debug.Log(number);
+            targetName = (targetName <= Int32.Parse(number)) ? Int32.Parse(number) : targetName;
         }
 
-        fileName = (fileName == -1) ? 0 : fileName;
+        targetName = (targetName == -1) ? 0 : targetName + 1;
 
         this.customImageSynthesis.OnSceneChange();
-        mono.StartCoroutine(this.customImageSynthesis.Save(fileName.ToString(), currentRoom, currentModel, -1, -1, destinationPath));
+        mono.StartCoroutine(this.customImageSynthesis.Save(targetName.ToString(), currentRoom, currentModel, -1, -1, destinationPath));
 
     }
 

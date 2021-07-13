@@ -28,9 +28,13 @@ public class ModelManager : MonoBehaviour
     public InputField modelCountInputField;
     public InputField categoryCountInputField;
 
+
     public InputField cameraMinInputField;
     public InputField cameraMaxInputField;
     public InputField cameraHeightInputField;
+
+    public Text elapsedTime;
+    public Text modelCount;
 
     public string[] categories;
     public GameObject[] categoryReference;
@@ -60,6 +64,8 @@ public class ModelManager : MonoBehaviour
     private Pipeline currentPipeline;
 
     private List<GameObject> lightSourceList = new List<GameObject>();
+    private float currentTime = 0f;
+    private bool timerIsRunning = false;
 
 
     // Start is called before the first frame update
@@ -106,6 +112,17 @@ public class ModelManager : MonoBehaviour
         //testmodel.transform.localScale = testmodel.transform.localScale * (categoryReferenceSize.y / currentSize.y);
     }
 
+    public void Update()
+    {
+        if (timerIsRunning)
+        {
+            currentTime += Time.deltaTime;
+
+        }
+        TimeSpan time = TimeSpan.FromSeconds(currentTime);
+        elapsedTime.text = time.ToString(@"\mm\:ss\:fff");
+
+    }
 
     public void test()
     {
@@ -133,8 +150,13 @@ public class ModelManager : MonoBehaviour
     {
         try
         {
-            gameObject.SetActive(false);
-            DestroyImmediate(gameObject);
+            Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
+            foreach(Transform child in allChildren)//Skip first child as parent gets returned
+            {
+                child.gameObject.SetActive(false);
+                DestroyImmediate(child.gameObject);
+            }
+
         }
         catch (Exception e)
 
@@ -174,6 +196,9 @@ public class ModelManager : MonoBehaviour
     IEnumerator buildEnv()
     {
         Debug.Log("buildEnv");
+        timerIsRunning = true;
+        currentTime = 0f;
+
         currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text);
 
         for (int i = 0; i < currentPipeline.getModelCount(); i++) {
@@ -203,6 +228,9 @@ public class ModelManager : MonoBehaviour
 
             yield return room;
         }
+
+        timerIsRunning = false;
+
     }
 
 
