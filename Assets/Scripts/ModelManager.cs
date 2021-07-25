@@ -33,7 +33,8 @@ public class ModelManager : MonoBehaviour
     public InputField cameraMaxInputField;
     public InputField cameraHeightInputField;
 
-    public Text elapsedTime;
+    public Text startTime;
+    public Text endTime;
     public Text modelCount;
 
     public string[] categories;
@@ -112,18 +113,6 @@ public class ModelManager : MonoBehaviour
         //testmodel.transform.localScale = testmodel.transform.localScale * (categoryReferenceSize.y / currentSize.y);
     }
 
-    public void Update()
-    {
-        if (timerIsRunning)
-        {
-            currentTime += Time.deltaTime;
-
-        }
-        TimeSpan time = TimeSpan.FromSeconds(currentTime);
-        elapsedTime.text = time.ToString(@"\mm\:ss\:fff");
-
-    }
-
     public void test()
     {
         currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
@@ -198,6 +187,8 @@ public class ModelManager : MonoBehaviour
         Debug.Log("buildEnv");
         timerIsRunning = true;
         currentTime = 0f;
+        startTime.text = getCurrentTime();
+        endTime.text = "";
 
         currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text);
 
@@ -218,6 +209,7 @@ public class ModelManager : MonoBehaviour
 
             currentPipeline.execute(this);
 
+            modelCount.text = i.ToString();
 
             //Wait till last save is complete
             yield return new WaitForEndOfFrame();
@@ -226,9 +218,12 @@ public class ModelManager : MonoBehaviour
             //yield return new WaitForEndOfFrame();
             //yield return new WaitForEndOfFrame();
 
+            Resources.UnloadUnusedAssets();
+
             yield return room;
         }
 
+        endTime.text = getCurrentTime();
         timerIsRunning = false;
 
     }
@@ -400,6 +395,20 @@ public class ModelManager : MonoBehaviour
         DestroyImmediate(reference);
 
         MainCamera.transform.LookAt(model.transform);
+    }
+
+    private string getCurrentTime()
+    {
+        DateTime time = DateTime.Now;
+        string hour = LeadingZero(time.Hour);
+        string minute = LeadingZero(time.Minute);
+        string second = LeadingZero(time.Second);
+        return hour + ":" + minute + ":" + second;
+    }
+
+    private string LeadingZero(int n)
+    {
+        return n.ToString().PadLeft(2, '0');
     }
 
 }

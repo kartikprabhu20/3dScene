@@ -26,12 +26,13 @@ public class RoomHelper: Helper
 
     private System.Random random = new System.Random();
     private Shader shader;
+    private Texture2D tex;
 
     public RoomHelper(Shader shader)
     {
         this.shader = shader;
     }
- 
+
 
     public void randomiseSkybox(List<Material> skyBoxList)
     {
@@ -112,7 +113,7 @@ public class RoomHelper: Helper
                     rend.material.mainTexture = loadTexture(textureDictionary[child.name]);
 
                     if (child.name == "floor") {
-                        rend.material.mainTextureScale = new Vector2(10, 10);//Tiling 10x10
+                        rend.material.mainTextureScale = new Vector2(5, 5);//Tiling 10x10
                     }
 
                 }
@@ -124,14 +125,13 @@ public class RoomHelper: Helper
 
     Texture2D loadTexture(string filePath)
     {
-        Texture2D texture = null;
+        this.tex = new Texture2D(2, 2);
         if (File.Exists(filePath))
         {
             byte[] fileData = File.ReadAllBytes(filePath);
-            texture = new Texture2D(2, 2);
-            texture.LoadImage(fileData); //..this will auto-resize the texture dimensions.
+            this.tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
         }
 
-        return texture;
+        return tex;
     }
 }
