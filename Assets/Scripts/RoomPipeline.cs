@@ -17,9 +17,9 @@ public class RoomPipeline : Pipeline
         base.lightHelper = lightHelper;
     }
 
-    public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory)
+    public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory, Vector3 origin)
     {
-        base.init(dataPath, outputPath, rootRoomPath, rootMaterialPath, categoriesInput, imagesPerCategory);
+        base.init(dataPath, outputPath, rootRoomPath, rootMaterialPath, categoriesInput, imagesPerCategory,origin);
 
         foreach (string category in this.categories)
         {
@@ -70,11 +70,11 @@ public class RoomPipeline : Pipeline
 
         try
         {
-            base.currentRoom = new OBJLoader().Load(objPath, mtlPath);
+            base.currentRoom = new OBJLoader().Load(objPath, mtlPath, base.origin);
         }
         catch
         {
-            base.currentRoom = new OBJLoader().Load(objPath);
+            base.currentRoom = new OBJLoader().Load(objPath, base.origin);
         }
 
         return base.currentRoom;
@@ -88,11 +88,11 @@ public class RoomPipeline : Pipeline
 
         try
         {
-            base.currentModel = new OBJLoader().Load(objPath, mtlPath);
+            base.currentModel = new OBJLoader().Load(objPath, mtlPath, base.origin);
         }
         catch
         {
-            base.currentModel = new OBJLoader().Load(objPath);
+            base.currentModel = new OBJLoader().Load(objPath,base.origin);
         }
 
         return base.currentModel;

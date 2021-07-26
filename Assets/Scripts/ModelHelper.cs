@@ -11,7 +11,7 @@ public class ModelHelper : Helper
         this.shader = shader;
     }
 
-    public void setupModel(GameObject model)
+    public void setupModel(GameObject model, Vector3 origin)
     {
         //Debug.Log(model.transform.localScale.y);
         //Debug.Log(model.transform.lossyScale.y);
@@ -20,7 +20,7 @@ public class ModelHelper : Helper
 
 
         model.name = "target_model";
-        model.transform.position = new Vector3(0, 0, 0) + new Vector3(0, GetMeshHierarchyBounds(model).size.y/2,0);
+        model.transform.position = origin + new Vector3(0, GetMeshHierarchyBounds(model).size.y/2,0);
         model.AddComponent<MeshRenderer>();
         Rigidbody gameObjectsRigidBody = model.AddComponent<Rigidbody>();
         model.GetComponent<Rigidbody>().useGravity = false;

@@ -17,9 +17,9 @@ public class SinglePipeline : Pipeline
         base.lightHelper = lightHelper;
     }
 
-    public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory)
+    public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory, Vector3 origin)
     {
-        base.init(dataPath,outputPath, default_room_path, rootMaterialPath, categoriesInput, imagesPerCategory);
+        base.init(dataPath,outputPath, default_room_path, rootMaterialPath, categoriesInput, imagesPerCategory,origin);
 
         Debug.Log("init");
         foreach (string category in this.categories)
@@ -86,14 +86,14 @@ public class SinglePipeline : Pipeline
     {
         string objPath = base.roomPaths[0];
         string mtlPath = base.roomMtlPaths.Count > 0 ? base.roomMtlPaths[0] : " ";
-        Debug.Log(objPath);
+
         try
         {
-            base.currentRoom = new OBJLoader().Load(objPath, mtlPath);
+            base.currentRoom = new OBJLoader().Load(objPath, mtlPath, base.origin);
         }
         catch
         {
-            base.currentRoom = new OBJLoader().Load(objPath);
+            base.currentRoom = new OBJLoader().Load(objPath, base.origin);
         }
         return base.currentRoom;
     }
@@ -108,16 +108,21 @@ public class SinglePipeline : Pipeline
         base.currentModelNumber += 1;
         string objPath = modelPaths[this.currentModelNumber];
         string mtlPath = modelMtlPaths[this.currentModelNumber];
-        
+
+        Debug.Log(objPath);
+        Debug.Log(base.origin);
+        Debug.Log(categories[0]);
+
         try
         {
-            base.currentModel = new OBJLoader().Load(objPath, mtlPath);
+            base.currentModel = new OBJLoader().Load(objPath, mtlPath, base.origin);
         }
         catch
         {
-            base.currentModel = new OBJLoader().Load(objPath);
+            base.currentModel = new OBJLoader().Load(objPath, base.origin);
         }
 
+        base.currentModel.gameObject.transform.position = base.origin;
         return base.currentModel;
     }
 

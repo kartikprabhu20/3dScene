@@ -62,7 +62,7 @@ namespace Dummiesman
                 {
                     SplitMode = SplitMode.Object,
                 };
-                loader.Load(pth);
+                loader.Load(pth, new Vector3(0, 0, 0));
 
                 Debug.Log($"OBJ import time: {s.ElapsedMilliseconds}ms");
                 s.Stop();
@@ -97,7 +97,7 @@ namespace Dummiesman
         /// </summary>
         /// <param name="input">Input OBJ stream</param>
         /// <returns>Returns a GameObject represeting the OBJ file, with each imported object as a child.</returns>
-        public GameObject Load(Stream input)
+        public GameObject Load(Stream input, Vector3 origin)
         {
             var reader = new StreamReader(input);
             //var reader = new StringReader(inputReader.ReadToEnd());
@@ -263,6 +263,7 @@ namespace Dummiesman
 
             //finally, put it all together
             GameObject obj = new GameObject(_objInfo != null ? Path.GetFileNameWithoutExtension(_objInfo.Name) : "WavefrontObject");
+            obj.transform.position = origin;
             obj.transform.localScale = new Vector3(-1f, 1f, 1f);
 
             foreach (var builder in builderDict)
@@ -284,12 +285,12 @@ namespace Dummiesman
         /// <param name="input">Input OBJ stream</param>
         /// /// <param name="mtlInput">Input MTL stream</param>
         /// <returns>Returns a GameObject represeting the OBJ file, with each imported object as a child.</returns>
-        public GameObject Load(Stream input, Stream mtlInput)
+        public GameObject Load(Stream input, Stream mtlInput,Vector3 origin)
         {
             var mtlLoader = new MTLLoader();
             Materials = mtlLoader.Load(mtlInput);
 
-            return Load(input);
+            return Load(input, origin);
         }
 
         /// <summary>
@@ -298,7 +299,7 @@ namespace Dummiesman
         /// <param name="path">Input OBJ path</param>
         /// /// <param name="mtlPath">Input MTL path</param>
         /// <returns>Returns a GameObject represeting the OBJ file, with each imported object as a child.</returns>
-        public GameObject Load(string path, string mtlPath)
+        public GameObject Load(string path, string mtlPath,Vector3 origin)
         {
             _objInfo = new FileInfo(path);
             if (!string.IsNullOrEmpty(mtlPath) && File.Exists(mtlPath))
@@ -308,14 +309,14 @@ namespace Dummiesman
 
                 using (var fs = new FileStream(path, FileMode.Open))
                 {
-                    return Load(fs);
+                    return Load(fs, origin);
                 }
             }
             else
             {
                 using (var fs = new FileStream(path, FileMode.Open))
                 {
-                    return Load(fs);
+                    return Load(fs,origin);
                 }
             }
         }
@@ -325,11 +326,9 @@ namespace Dummiesman
         /// </summary>
         /// <param name="path">Input OBJ path</param>
         /// <returns>Returns a GameObject represeting the OBJ file, with each imported object as a child.</returns>
-        public GameObject Load(string path)
+        public GameObject Load(string path,Vector3 origin)
         {
-            Debug.Log("testing");
-            Debug.Log(path);
-            return Load(path, null);
+            return Load(path, null, origin);
         }
     }
 }

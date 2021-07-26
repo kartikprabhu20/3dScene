@@ -6,6 +6,7 @@ using System.IO;
 using System;
 using System.Linq;
 using UnityEngine.UI;
+using System.Threading;
 
 public class ModelManager : MonoBehaviour
 {
@@ -65,8 +66,6 @@ public class ModelManager : MonoBehaviour
     private Pipeline currentPipeline;
 
     private List<GameObject> lightSourceList = new List<GameObject>();
-    private float currentTime = 0f;
-    private bool timerIsRunning = false;
 
 
     // Start is called before the first frame update
@@ -86,7 +85,7 @@ public class ModelManager : MonoBehaviour
         modelsPathField.text = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/";
         roomPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
         materialPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
-        outputPathField.text = "/Users/apple/OVGU/Thesis/s2r3dfree/";
+        outputPathField.text = "/Users/apple/OVGU/Thesis/s2r3dfree_v2/";
         modelCountInputField.text = "10";
 
         cameraMinInputField.text = "1";
@@ -115,25 +114,25 @@ public class ModelManager : MonoBehaviour
 
     public void test()
     {
-        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
-        currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text);
+        //Pipeline currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
+        //currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text);
 
-        clearEnvironment();
+        //clearEnvironment();
 
-        room = currentPipeline.getRoomObject();
-        currentPipeline.setupRoom(room);
+        //room = currentPipeline.getRoomObject();
+        //currentPipeline.setupRoom(room);
 
-        model = currentPipeline.getModelObject();
-        currentPipeline.setupModel(model);
+        //model = currentPipeline.getModelObject();
+        //currentPipeline.setupModel(model);
 
-        roomHelper.randomiseSkybox(skyBoxList);
-        lightSourceList = currentPipeline.setupLigtSources(model, room);
+        //roomHelper.randomiseSkybox(skyBoxList);
+        //lightSourceList = currentPipeline.setupLigtSources(model, room);
 
-        currentPipeline.setupCamera(model);
-        replaceModel(room, model, currentPipeline.getModelCategory());
+        //currentPipeline.setupCamera(model);
+        //replaceModel(room, model, currentPipeline.getModelCategory(),MainCamera);
 
+        multiThread();
     }
-
 
     public void clearGameObject(GameObject gameObject)
     {
@@ -158,58 +157,87 @@ public class ModelManager : MonoBehaviour
 
     public void clearEnvironment()
     {
+        clearEnvironment(room, model);
+    }
+
+    public void clearEnvironment(GameObject room, GameObject model)
+    {
         clearGameObject(room);
         clearGameObject(model);
 
-        foreach(GameObject gameObject in lightSourceList)
+        foreach (GameObject gameObject in lightSourceList)
         {
             clearGameObject(gameObject);
         }
     }
 
-
-
     public void singleEnvironment()
     {
-        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
-        StartCoroutine(buildEnv());
+        Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
+        currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
+        StartCoroutine(buildEnv(currentPipe));
     }
 
     public void randomizeEnvironment()
     {
-        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
-        StartCoroutine(buildEnv());
+        Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
+        StartCoroutine(buildEnv(currentPipe));
     }
 
+    public void multiThread()
+    {
+        string[] categories = categoriesInputField.text.Split(',');
 
-    IEnumerator buildEnv()
+        int i = 0;
+
+        foreach(string category in categories)
+        {
+            i += 50;
+            Vector3 origin = new Vector3(0, 0, i);
+
+            Camera maincamera = GameObject.Instantiate(MainCamera);
+            //maincamera.tag = category;
+            cameraHelper = new CameraHelper(maincamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
+            roomHelper = new RoomHelper(shader);
+            modelHelper = new ModelHelper(shader);
+            lightHelper = new LightManager(lightSources);
+            Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE,cameraHelper);
+            currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, category, categoryCountInputField.text, origin);
+
+            Debug.Log("multiThread");
+
+            //Thread thread = new Thread(() => Run(currentPipe));
+            //thread.Start();
+
+            StartCoroutine(buildEnv(currentPipe));
+        }
+    }
+
+    
+
+    IEnumerator buildEnv(Pipeline currentPipe)
     {
         Debug.Log("buildEnv");
-        timerIsRunning = true;
-        currentTime = 0f;
-        startTime.text = getCurrentTime();
-        endTime.text = "";
+        //startTime.text = getCurrentTime();
+        //endTime.text = "";
+        for (int i = 0; i < currentPipe.getModelCount(); i++) {
+            //clearEnvironment();
 
-        currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text);
+            GameObject room = currentPipe.getRoomObject();
+            currentPipe.setupRoom(room);
 
-        for (int i = 0; i < currentPipeline.getModelCount(); i++) {
-            clearEnvironment();
+            GameObject model = currentPipe.getModelObject();
+            currentPipe.setupModel(model);
 
-            room = currentPipeline.getRoomObject();
-            currentPipeline.setupRoom(room);
+            lightSourceList = currentPipe.setupLigtSources(model,room);
 
-            model = currentPipeline.getModelObject();
-            currentPipeline.setupModel(model);
+            //replaceModel(room, model, currentPipe.getModelCategory(),MainCamera);
+            currentPipe.setupCamera(model);
 
-            roomHelper.randomiseSkybox(skyBoxList);
-            lightSourceList = currentPipeline.setupLigtSources(model,room);
+            currentPipe.execute(this,skyBoxList);
 
-            replaceModel(room, model, currentPipeline.getModelCategory());
-            currentPipeline.setupCamera(model);
-
-            currentPipeline.execute(this);
-
-            modelCount.text = i.ToString();
+            //modelCount.text = i.ToString();
 
             //Wait till last save is complete
             yield return new WaitForEndOfFrame();
@@ -221,10 +249,11 @@ public class ModelManager : MonoBehaviour
             Resources.UnloadUnusedAssets();
 
             yield return room;
+
+            clearEnvironment(room, model);
         }
 
-        endTime.text = getCurrentTime();
-        timerIsRunning = false;
+        //endTime.text = getCurrentTime();
 
     }
 
@@ -267,14 +296,14 @@ public class ModelManager : MonoBehaviour
                 try
                 {
                     string mtlPath = Directory.GetFiles(folderPath, "*.mtl")[0];
-                    model = new OBJLoader().Load(objPath, mtlPath);
+                    model = new OBJLoader().Load(objPath, mtlPath, new Vector3(0, 0, 0));
                 }
                 catch
                 {
-                    model = new OBJLoader().Load(objPath);
+                    model = new OBJLoader().Load(objPath, new Vector3(0, 0, 0));
                 }
 
-                replaceModel(room, model, category);
+                replaceModel(room, model, category,MainCamera);
 
                 model.SetActive(true);
 
@@ -365,7 +394,7 @@ public class ModelManager : MonoBehaviour
         yield return model;
     }
 
-    private void replaceModel(GameObject room, GameObject model, string category)
+    private void replaceModel(GameObject room, GameObject model, string category, Camera maincamera)
     {
         List<GameObject> matchingObjects = new List<GameObject>();
         Transform[] allChildren = room.GetComponentsInChildren<Transform>();
@@ -391,10 +420,10 @@ public class ModelManager : MonoBehaviour
         modelHelper.modifyScale(model, reference);
         //model.transform.parent = reference.transform.parent;
 
-        model.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
+        //model.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
         DestroyImmediate(reference);
 
-        MainCamera.transform.LookAt(model.transform);
+        maincamera.transform.LookAt(model.transform);
     }
 
     private string getCurrentTime()

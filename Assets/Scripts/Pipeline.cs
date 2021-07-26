@@ -17,13 +17,13 @@ public abstract class AbstractPipeline
     public abstract string getModelCategory();
     public abstract string getModelName();
 
-    public abstract void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory);
+    public abstract void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory, Vector3 origin);
     public abstract void setupRoom(GameObject room);
     public abstract void setupModel(GameObject model);
     public abstract void setupCamera(GameObject model);
     public abstract List<GameObject> setupLigtSources(GameObject model, GameObject room);
 
-    public abstract void execute(MonoBehaviour mono);
+    public abstract void execute(MonoBehaviour mono, List<Material> skyBoxList);
 
 }
 
@@ -35,6 +35,7 @@ public class Pipeline : AbstractPipeline
     protected CameraHelper cameraHelper;
     protected LightManager lightHelper;
     protected CustomImageSynthesis customImageSynthesis;
+    protected Vector3 origin;
 
     protected int totalModelCount = 0;
     protected int imagesPerCategory = 0;
@@ -84,7 +85,7 @@ public class Pipeline : AbstractPipeline
         roomMtlPaths.AddRange(Directory.GetFiles(rootRoomPath, "*.mtl"));
     }
 
-    public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory)
+    public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory, Vector3 origin)
     {
         //Debug.Log("init1");
 
@@ -93,6 +94,7 @@ public class Pipeline : AbstractPipeline
         this.rootMaterialPath = rootMaterialPath;
         this.rootRoomPath = rootRoomPath;
         this.categories = categoriesInput.Split(',');
+        this.origin = origin;
 
         updateRoomPathList(rootRoomPath);
 
@@ -106,8 +108,10 @@ public class Pipeline : AbstractPipeline
 
     }
 
-    public override void execute(MonoBehaviour mono)
+    public override void execute(MonoBehaviour mono, List<Material> skyBoxList)
     {
+        roomHelper.randomiseSkybox(skyBoxList);
+
         string destinationPath = outputPath + Path.DirectorySeparatorChar + getModelCategory() + Path.DirectorySeparatorChar + getModelName();
 
         //Debug.Log(getModelCategory()+ " "+ getModelName());
@@ -142,7 +146,7 @@ public class Pipeline : AbstractPipeline
 
     public override void setupModel(GameObject model)
     {
-        modelHelper.setupModel(model);
+        modelHelper.setupModel(model,origin);
     }
 
     public override int getModelCount()
