@@ -71,10 +71,10 @@ public class CustomImageSynthesis : MonoBehaviour
 
         // use real camera to capture final image
         capturePasses[0].camera = mainCamera.GetComponent<Camera>();
-        Debug.Log("caputrepasses");
-        Debug.Log(capturePasses.Length);
+        //Debug.Log("caputrepasses");
+        //Debug.Log(capturePasses.Length);
         for (int q = 1; q < capturePasses.Length; q++) { 
-            Debug.Log(capturePasses[q].name);
+            //Debug.Log(capturePasses[q].name);
             capturePasses[q].camera = CreateHiddenCamera(capturePasses[q].name);
         }
 

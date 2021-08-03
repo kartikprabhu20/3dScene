@@ -30,6 +30,7 @@ public class Helper
     {
         child.AddComponent<MeshCollider>();
         child.GetComponent<MeshCollider>().convex = true;
+        child.GetComponent<MeshCollider>().isTrigger = true;
     }
 
 

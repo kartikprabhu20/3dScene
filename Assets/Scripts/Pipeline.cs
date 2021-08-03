@@ -16,15 +16,16 @@ public abstract class AbstractPipeline
     public abstract void setModelCount(int modelCount);
     public abstract string getModelCategory();
     public abstract string getModelName();
+    public abstract Camera getMainCamera();
 
     public abstract void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory, Vector3 origin);
     public abstract void setupRoom(GameObject room);
     public abstract void setupModel(GameObject model);
-    public abstract void setupCamera(GameObject model);
+    public abstract bool setupCamera(GameObject model);
     public abstract List<GameObject> setupLigtSources(GameObject model, GameObject room);
 
     public abstract void execute(MonoBehaviour mono, List<Material> skyBoxList);
-
+    public abstract void replaceModel(MonoBehaviour mono, Vector3 origin);
 }
 
 
@@ -106,6 +107,59 @@ public class Pipeline : AbstractPipeline
 
         this.customImageSynthesis = new CustomImageSynthesis(cameraHelper.getMainCamera());
 
+        Debug.Log("init");
+        foreach (string category in this.categories)
+        {
+            int catagoryCount = 0;
+            string categoryPath = this.dataPath + Path.DirectorySeparatorChar + category;
+            string[] folders = Directory.GetDirectories(categoryPath, "*", System.IO.SearchOption.TopDirectoryOnly);
+
+            while (!this.incrementCategoryCounter || catagoryCount != this.imagesPerCategory)
+            {
+                foreach (string folderPath in folders)
+                {
+                    //Debug.Log("category: " + category+" /// folderPath: " + folderPath);
+                    //Debug.Log("modelName: " + new DirectoryInfo(folderPath).Name);
+                    //Debug.Log(modelCategories.Count);
+
+                    catagoryCount++;
+
+                    string objPath = Directory.GetFiles(folderPath, "*.obj")[0];
+                    string mtlPath = "";
+                    try
+                    {
+                        mtlPath = Directory.GetFiles(folderPath, "*.mtl")[0];
+                    }
+                    catch
+                    {
+                    }
+
+                    modelPaths.Add(objPath);
+                    modelMtlPaths.Add(mtlPath);
+                    modelCategories.Add(category);
+                    modelNames.Add(new DirectoryInfo(folderPath).Name);
+
+                    this.totalModelCount += 1;
+
+                    if (this.incrementCategoryCounter && catagoryCount == this.imagesPerCategory)
+                    {
+                        break;
+                    }
+
+                    //Debug.Log("catagoryCount");
+                    //Debug.Log(catagoryCount);
+                    //Debug.Log("modelCount");
+                    //Debug.Log(modelCount);
+                }
+
+                if (!this.incrementCategoryCounter)
+                {
+                    break;
+                }
+
+            }
+
+        }
     }
 
     public override void execute(MonoBehaviour mono, List<Material> skyBoxList)
@@ -159,9 +213,9 @@ public class Pipeline : AbstractPipeline
         this.totalModelCount = modelCount;
     }
 
-    public override void setupCamera(GameObject model)
+    public override bool setupCamera(GameObject model)
     {
-        cameraHelper.randomizeCamera(currentRoom, model, true);
+        return cameraHelper.randomizeCamera(currentRoom, model, true);
     }
 
     public override List<GameObject> setupLigtSources(GameObject model, GameObject room)
@@ -177,6 +231,16 @@ public class Pipeline : AbstractPipeline
     public override string getModelName()
     {
         return modelNames[currentModelNumber];
+    }
+
+    public override Camera getMainCamera()
+    {
+        return cameraHelper.getMainCamera();
+    }
+
+    public override void replaceModel(MonoBehaviour mono, Vector3 origin)
+    {
+        throw new NotImplementedException();
     }
 }
 

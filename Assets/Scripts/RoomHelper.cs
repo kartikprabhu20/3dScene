@@ -59,6 +59,7 @@ public class RoomHelper: Helper
         foreach (Transform child in allChildren)
         {
             renameGameobject(child.gameObject);
+            attachMeshColliders(child.gameObject);
         }
 
         //Rigidbody gameObjectsRigidBody = roomModel.AddComponent<Rigidbody>();

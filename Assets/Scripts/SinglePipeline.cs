@@ -21,60 +21,6 @@ public class SinglePipeline : Pipeline
     {
         base.init(dataPath,outputPath, default_room_path, rootMaterialPath, categoriesInput, imagesPerCategory,origin);
 
-        Debug.Log("init");
-        foreach (string category in this.categories)
-        {
-            int catagoryCount = 0;
-            string categoryPath = this.dataPath + Path.DirectorySeparatorChar + category;
-            string[] folders = Directory.GetDirectories(categoryPath, "*", System.IO.SearchOption.TopDirectoryOnly);
-
-            while (!this.incrementCategoryCounter || catagoryCount != this.imagesPerCategory)
-            {
-                foreach (string folderPath in folders)
-                {
-                    //Debug.Log("category: " + category+" /// folderPath: " + folderPath);
-                    //Debug.Log("modelName: " + new DirectoryInfo(folderPath).Name);
-                    //Debug.Log(modelCategories.Count);
-
-                    catagoryCount++;
-
-                    string objPath = Directory.GetFiles(folderPath, "*.obj")[0];
-                    string mtlPath = "";
-                    try
-                    {
-                        mtlPath = Directory.GetFiles(folderPath, "*.mtl")[0];
-                    }
-                    catch
-                    {
-                    }
-
-                    modelPaths.Add(objPath);
-                    modelMtlPaths.Add(mtlPath);
-                    modelCategories.Add(category);
-                    modelNames.Add(new DirectoryInfo(folderPath).Name);
-
-                    this.totalModelCount += 1;
-
-                    if (this.incrementCategoryCounter && catagoryCount == this.imagesPerCategory)
-                    {
-                        break;
-                    }
-
-                    //Debug.Log("catagoryCount");
-                    //Debug.Log(catagoryCount);
-                    //Debug.Log("modelCount");
-                    //Debug.Log(modelCount);
-                }
-
-                if (!this.incrementCategoryCounter)
-                {
-                    break;
-                }
-
-            }
-
-        }
-
     }
 
     public override int PipeLineType
@@ -95,6 +41,8 @@ public class SinglePipeline : Pipeline
         {
             base.currentRoom = new OBJLoader().Load(objPath, base.origin);
         }
+
+        base.currentRoom.name = "room";
         return base.currentRoom;
     }
 
@@ -109,9 +57,9 @@ public class SinglePipeline : Pipeline
         string objPath = modelPaths[this.currentModelNumber];
         string mtlPath = modelMtlPaths[this.currentModelNumber];
 
-        Debug.Log(objPath);
-        Debug.Log(base.origin);
-        Debug.Log(categories[0]);
+        //Debug.Log(objPath);
+        //Debug.Log(base.origin);
+        //Debug.Log(categories[0]);
 
         try
         {
@@ -124,6 +72,11 @@ public class SinglePipeline : Pipeline
 
         base.currentModel.gameObject.transform.position = base.origin;
         return base.currentModel;
+    }
+
+    public override void replaceModel(MonoBehaviour mono, Vector3 origin)
+    {
+        return;
     }
 
 }

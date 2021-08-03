@@ -38,6 +38,8 @@ public class ModelManager : MonoBehaviour
     public Text endTime;
     public Text modelCount;
 
+    public Button nextModelButton;
+
     public string[] categories;
     public GameObject[] categoryReference;
     public GameObject cameraPositions;
@@ -66,7 +68,7 @@ public class ModelManager : MonoBehaviour
     private Pipeline currentPipeline;
 
     private List<GameObject> lightSourceList = new List<GameObject>();
-
+    public string[] exceptionObjects = { "wall","floor"};
 
     // Start is called before the first frame update
     void Start()
@@ -84,7 +86,7 @@ public class ModelManager : MonoBehaviour
 
         modelsPathField.text = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/";
         roomPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
-        materialPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
+        materialPathField.text = "/Users/apple/OVGU/Thesis/texture_library";
         outputPathField.text = "/Users/apple/OVGU/Thesis/s2r3dfree_v2/";
         modelCountInputField.text = "10";
 
@@ -131,7 +133,34 @@ public class ModelManager : MonoBehaviour
         //currentPipeline.setupCamera(model);
         //replaceModel(room, model, currentPipeline.getModelCategory(),MainCamera);
 
-        multiThread();
+
+        // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+        clearEnvironment();
+
+        Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
+
+        GameObject room = currentPipe.getRoomObject();
+        currentPipe.setupRoom(room);
+
+        GameObject model = currentPipe.getModelObject();
+        currentPipe.setupModel(model);
+
+        Vector3 origin = model.transform.position;
+        bool cameraNotSet = true;
+        do
+        {
+            Debug.Log("camera setting");
+            replaceModel(room, model, currentPipe.getModelCategory(), currentPipe.getMainCamera(), origin);
+            cameraNotSet = !currentPipe.setupCamera(model);
+        } while (cameraNotSet);
+
+        lightSourceList = currentPipe.setupLigtSources(model, room);
+        currentPipe.execute(this, skyBoxList);
+
+        // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+        //multiThread();
     }
 
     public void clearGameObject(GameObject gameObject)
@@ -144,7 +173,6 @@ public class ModelManager : MonoBehaviour
                 child.gameObject.SetActive(false);
                 DestroyImmediate(child.gameObject);
             }
-
         }
         catch (Exception e)
 
@@ -180,10 +208,82 @@ public class ModelManager : MonoBehaviour
 
     public void randomizeEnvironment()
     {
-        Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
-        currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
-        StartCoroutine(buildEnv(currentPipe));
+        nextModelButton.gameObject.SetActive(true);
+        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
+
+        setEnv();
+       //StartCoroutine(buildEnv(currentPipe));
     }
+
+    public void setEnv()
+    {
+        model = currentPipeline.getModelObject();
+
+        bool roomDoesNotContainsCategory = true;
+        do
+        {
+            room = currentPipeline.getRoomObject();
+            Transform[] allChildren = room.GetComponentsInChildren<Transform>();
+            foreach (Transform child in allChildren)
+            {
+                if (currentPipeline.getModelCategory() == child.name)
+                {
+                    roomDoesNotContainsCategory = false;
+                    break;
+                }
+            }
+
+            if (roomDoesNotContainsCategory)
+            {
+                clearGameObject(room);
+            }
+        } while (roomDoesNotContainsCategory);
+
+
+        currentPipeline.setupRoom(room);
+        currentPipeline.setupModel(model);
+
+        Vector3 origin = model.transform.position;
+        bool cameraNotSet = true;
+        do
+        {
+            Debug.Log("camera setting");
+            //replaceModel(room, model, currentPipe.getModelCategory(), currentPipe.getMainCamera(), origin);
+            currentPipeline.replaceModel(this, origin);
+            cameraNotSet = !currentPipeline.setupCamera(model);
+        } while (cameraNotSet);
+
+        lightSourceList = currentPipeline.setupLigtSources(model, room);
+
+    }
+
+
+    public void onNextModel()
+    {
+        StartCoroutine(onNextModelTrig());
+    }
+
+    IEnumerator onNextModelTrig()
+    {
+        bool cameraNotSet = true;
+        do
+        {
+            cameraNotSet = !currentPipeline.setupCamera(model);
+        } while (cameraNotSet);
+
+        currentPipeline.execute(this, skyBoxList);
+
+
+        //Wait till last save is complete
+        yield return new WaitForEndOfFrame();
+        yield return new WaitForEndOfFrame();
+        yield return new WaitForEndOfFrame();
+
+        clearEnvironment(room, model);
+        setEnv();
+    }
+
 
     public void multiThread()
     {
@@ -214,13 +314,12 @@ public class ModelManager : MonoBehaviour
         }
     }
 
-    
 
     IEnumerator buildEnv(Pipeline currentPipe)
     {
         Debug.Log("buildEnv");
-        //startTime.text = getCurrentTime();
-        //endTime.text = "";
+        startTime.text = getCurrentTime();
+        endTime.text = "";
         for (int i = 0; i < currentPipe.getModelCount(); i++) {
             //clearEnvironment();
 
@@ -230,14 +329,20 @@ public class ModelManager : MonoBehaviour
             GameObject model = currentPipe.getModelObject();
             currentPipe.setupModel(model);
 
-            lightSourceList = currentPipe.setupLigtSources(model,room);
+            Vector3 origin = model.transform.position;
+            bool cameraNotSet = true;
+            do
+            {
+                Debug.Log("camera setting");
+                //replaceModel(room, model, currentPipe.getModelCategory(), currentPipe.getMainCamera(), origin);
+                currentPipe.replaceModel(this,origin);
+                cameraNotSet = !currentPipe.setupCamera(model);
+            } while (cameraNotSet);
 
-            //replaceModel(room, model, currentPipe.getModelCategory(),MainCamera);
-            currentPipe.setupCamera(model);
-
+            lightSourceList = currentPipe.setupLigtSources(model, room);
             currentPipe.execute(this,skyBoxList);
 
-            //modelCount.text = i.ToString();
+            modelCount.text = i.ToString();
 
             //Wait till last save is complete
             yield return new WaitForEndOfFrame();
@@ -253,15 +358,91 @@ public class ModelManager : MonoBehaviour
             clearEnvironment(room, model);
         }
 
-        //endTime.text = getCurrentTime();
+        endTime.text = getCurrentTime();
 
     }
 
 
     public void createDataset()
     {
-        clearEnvironment();     
-        StartCoroutine(LoadObjects());
+        clearEnvironment();
+        //StartCoroutine(LoadObjects());
+
+        Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
+
+        StartCoroutine(buildEnv2(currentPipe));
+    }
+
+    IEnumerator buildEnv2(Pipeline currentPipe)
+    {
+        startTime.text = getCurrentTime();
+        endTime.text = "";
+        Debug.Log("buildEnv2");
+        //startTime.text = getCurrentTime();
+        //endTime.text = "";
+        for (int i = 0; i < currentPipe.getModelCount(); i++)
+        {
+            //clearEnvironment();
+            GameObject model = currentPipe.getModelObject();
+            modelCount.text = i.ToString();
+            bool roomDoesNotContainsCategory = true;
+            do
+            {
+                GameObject room = currentPipe.getRoomObject();
+                Transform[] allChildren = room.GetComponentsInChildren<Transform>();
+                foreach (Transform child in allChildren)
+                {
+                    if (currentPipe.getModelCategory() == child.name)
+                    {
+                        roomDoesNotContainsCategory = false;
+                        break;
+                    }
+                }
+
+                if (roomDoesNotContainsCategory)
+                {
+                    clearGameObject(room);
+                    continue;
+                }
+
+                currentPipe.setupRoom(room);
+                currentPipe.setupModel(model);
+
+                Vector3 origin = model.transform.position;
+                bool cameraNotSet = true;
+                do
+                {
+                    Debug.Log("camera setting");
+                    //replaceModel(room, model, currentPipe.getModelCategory(), currentPipe.getMainCamera(), origin);
+                    currentPipe.replaceModel(this, origin);
+                    cameraNotSet = !currentPipeline.setupCamera(model);
+                } while (cameraNotSet);
+
+                lightSourceList = currentPipe.setupLigtSources(model, room);
+
+                currentPipe.execute(this, skyBoxList);
+
+                //modelCount.text = i.ToString();
+
+                //Wait till last save is complete
+                yield return new WaitForEndOfFrame();
+                yield return new WaitForEndOfFrame();
+                yield return new WaitForEndOfFrame();
+                //yield return new WaitForEndOfFrame();
+                //yield return new WaitForEndOfFrame();
+
+                Resources.UnloadUnusedAssets();
+
+                yield return room;
+
+                clearEnvironment(room, model);
+
+            } while (roomDoesNotContainsCategory);
+        }
+        endTime.text = getCurrentTime();
+        //endTime.text = getCurrentTime();
+
     }
 
     // Invoked when the value of the text field changes.
@@ -272,130 +453,9 @@ public class ModelManager : MonoBehaviour
         cameraHelper = new CameraHelper(MainCamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
     }
 
-
-    IEnumerator LoadObjects()
+    private void replaceModel(GameObject room, GameObject model, string category, Camera maincamera, Vector3 origin)
     {
-        int categoryIndex = 0;
-        foreach (string category in categories)
-        {
-            //Debug.Log(category);
-            string categoryPath = datapath + Path.DirectorySeparatorChar + category;
-            //Debug.Log(categoryPath);
-
-            string[] folders = Directory.GetDirectories(categoryPath, "*", System.IO.SearchOption.TopDirectoryOnly);
-
-            //To teest single model
-            //string[] folders = { "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/chair/IKEA_EKENAS/" };
-
-            foreach (string folderPath in folders)
-            {
-                Debug.Log(folderPath);
-                randomizeEnvironment(); //change room
-
-                string objPath = Directory.GetFiles(folderPath, "*.obj")[0];
-                try
-                {
-                    string mtlPath = Directory.GetFiles(folderPath, "*.mtl")[0];
-                    model = new OBJLoader().Load(objPath, mtlPath, new Vector3(0, 0, 0));
-                }
-                catch
-                {
-                    model = new OBJLoader().Load(objPath, new Vector3(0, 0, 0));
-                }
-
-                replaceModel(room, model, category,MainCamera);
-
-                model.SetActive(true);
-
-                model.transform.position = new Vector3(0, 0, 0);
-                model.AddComponent<MeshRenderer>();
-                Rigidbody gameObjectsRigidBody = model.AddComponent<Rigidbody>();
-                model.GetComponent<Rigidbody>().drag = 10;
-                model.GetComponent<Rigidbody>().mass = 10;
-
-
-                //Vector3 sizeCalculated = model.GetComponent<Renderer>().bounds.size;
-                //Debug.Log(sizeCalculated);
-
-                //Vector3 sizeCalculated2= categoryReference[0].GetComponent<Renderer>().bounds.size;
-                //Debug.Log(sizeCalculated2);
-
-
-                //Adding mesh collider to all child objects of model
-                Transform[] allChildren = model.GetComponentsInChildren<Transform>();
-                foreach (Transform child in allChildren)
-                {
-                    modelHelper.attachMeshColliders(child.gameObject);
-                }
-
-                if (categoryReference.Length != 0 && categories.Length == categoryReference.Length)
-                {
-                    var currentBounds = modelHelper.GetMeshHierarchyBounds(model);
-                    var currentSize = currentBounds.size;
-                    var categoryReferenceBounds = categoryReference[categoryIndex].GetComponent<Renderer>().bounds;
-                    var categoryReferenceSize = categoryReferenceBounds.size;
-                    //float minimumNewSizeRatio = Math.Min(categoryReferenceSize.x / currentSize.x, Math.Min(categoryReferenceSize.y / currentSize.y, categoryReferenceSize.z / currentSize.z));
-                    float minimumNewSizeRatio = (categoryReferenceSize.y / currentSize.y); //Only match height
-                    model.transform.localScale = model.transform.localScale * minimumNewSizeRatio;
-                }
-
-                Transform[] cameraChildrens = cameraPositions.GetComponentsInChildren<Transform>();
-                foreach (Transform childCam in cameraChildrens)
-                {
-                    //Debug.Log(childCam.name);
-                    //Debug.Log(model.transform.position);
-                    yield return new WaitForEndOfFrame();
-                    yield return new WaitForEndOfFrame();
-
-                    MainCamera.transform.position = childCam.gameObject.transform.position;
-                    MainCamera.transform.rotation = childCam.gameObject.transform.rotation;
-
-                    roomHelper.randomiseSkybox(skyBoxList);
-
-                    lightSource.GetComponent<Light>().intensity = random.Next(lightIntensityLow, lightIntensityHigh);
-                    lightSource.gameObject.transform.eulerAngles = new Vector3(random.Next(lightXRotationLow, lightXRotationHigh), random.Next(lightYRotationLow, lightYRotationHigh), 0);
-
-                    Material floorMaterial = floorList[random.Next(floorList.Count)];
-                    floor.gameObject.GetComponent<MeshRenderer>().material = floorMaterial;
-
-                    Material wallMaterial = wallList[random.Next(wallList.Count)];
-
-                    foreach (Transform wall in walls.GetComponentsInChildren<Transform>().Where(go => go.gameObject != walls.gameObject))
-                    {
-                        //Debug.Log(wall.name);
-                        wall.gameObject.GetComponent<MeshRenderer>().material = wallMaterial;
-                    }
-
-
-                    CustomImageSynthesis customImageSynthesis = new CustomImageSynthesis(MainCamera);
-
-                    //string filePath = folderPath + Path.DirectorySeparatorChar + "img";
-                    string filePath = outputPathField.text + Path.DirectorySeparatorChar + "img";
-
-                    if (!Directory.Exists(filePath))
-                    {
-                        Directory.CreateDirectory(filePath);
-                    }
-
-                    StartCoroutine(customImageSynthesis.Save(childCam.name, room, model, -1, -1, filePath));
-                }
-
-                //Wait till last save is complete
-                yield return new WaitForEndOfFrame();
-                yield return new WaitForEndOfFrame();
-                yield return new WaitForEndOfFrame();
-
-                clearEnvironment();
-                //break;
-            }
-            categoryIndex = categoryIndex + 1;
-            //break;
-        }
-        yield return model;
-    }
-
-    private void replaceModel(GameObject room, GameObject model, string category, Camera maincamera)
-    {
+        Debug.Log("replaceModel");
         List<GameObject> matchingObjects = new List<GameObject>();
         Transform[] allChildren = room.GetComponentsInChildren<Transform>();
         int i = 0;
@@ -405,25 +465,88 @@ public class ModelManager : MonoBehaviour
             {
                 i += 1;
                 matchingObjects.Add(child.gameObject);
+                //Debug.Log(child.name+ i.ToString());
+                //child.name = child.name + i.ToString();
             }
         }
 
-        if(matchingObjects.Count == 0)
+        Debug.Log("matchingObjects.Count:"+ matchingObjects.Count.ToString());
+        if (matchingObjects.Count < 1)
         {
-            Debug.Log("No match found");
+            checkIntersection(room, model, origin);
             return;
         }
 
         GameObject reference = matchingObjects[random.Next(matchingObjects.Count)];
-
-
         modelHelper.modifyScale(model, reference);
         //model.transform.parent = reference.transform.parent;
 
-        //model.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
+        model.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
+        model.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
+        model.transform.rotation = reference.transform.rotation;
+        reference.SetActive(false);
         DestroyImmediate(reference);
 
+        checkIntersection(room, model, origin);
+
         maincamera.transform.LookAt(model.transform);
+        return;
+    }
+
+    private void checkIntersection(GameObject room,GameObject model,Vector3 origin)
+    {
+        Debug.Log("checkIntersection");
+        Transform[] allChildren = room.GetComponentsInChildren<Transform>();
+        foreach (Transform child in allChildren)
+        {
+            if (child != null && model.GetComponent<Collider>().bounds.Intersects(child.gameObject.GetComponent<Collider>().bounds))//If target object is intersecting with gameobject
+            {
+                int pos = Array.IndexOf(exceptionObjects, child.name);
+                if (pos == -1) //If exceptionObjects string array doesnt have the name of the child, delete the child
+                {
+                    Debug.Log("Bounds intersecting");
+                    if(child.name == "bed")
+                    {
+                        string[] objectsToDestory = { "duvet", "pillow"};
+                        foreach (string objectToDestroy in objectsToDestory)
+                        {
+                            FindAndDestroy(room,objectToDestroy);
+                        }
+                    }
+                    DestroyImmediate(child.gameObject);
+                }
+                //else if (pos == 0)//if wall is intersecting then go back to origin
+                //{
+                //    Debug.Log("Bounds intersecting");
+                //    model.transform.position = origin;
+                //    checkIntersection(room,model, origin);
+                //}
+            }
+        }
+        return;
+    }
+
+    private void FindAndDestroy(GameObject room,string objectName)
+    {
+        try
+        {
+            Transform[] allChildren = room.GetComponentsInChildren<Transform>();
+            foreach (Transform child in allChildren)
+            {
+                if (child.name == objectName)
+                {
+                    GameObject objectToDestroy = child.gameObject;
+                    if (objectToDestroy != null)
+                    {
+                        DestroyImmediate(objectToDestroy);
+                    }
+                }
+            }
+        }
+        catch
+        {
+
+        }
     }
 
     private string getCurrentTime()

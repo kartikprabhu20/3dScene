@@ -7,6 +7,8 @@ public class CameraHelper: Helper
     private float minDistance = 1.0f;
     private float maxDistance= 1.2f;
     private float minHeight = 0.25f;
+    public string[] commonObjects = {};
+
 
     public CameraHelper(Camera mainCamera, string minDistance, string maxDistance, string minHeight)
     {
@@ -33,30 +35,45 @@ public class CameraHelper: Helper
         return this.mainCamera;
     }
 
-    public void randomizeCamera(GameObject room, GameObject targetObject, bool withBounds)
+    public bool randomizeCamera(GameObject room, GameObject targetObject, bool withBounds)
     {
         Renderer renderer = targetObject.gameObject.GetComponent<MeshRenderer>();
         bool randomized = false;
+        int attempts = 10;
+        bool cameraSet = true;
         do
         {
-            //if (withBounds)
-            //{
-            //    var currentBounds = GetMeshHierarchyBounds(targetObject);
-            //    mainCamera.transform.position = RandomPointInBounds(currentBounds);
-            //}
-            //else
-            //{
-            //    //MainCamera.transform.position = RandomPointTransform(targetObject.transform.position, new Vector3(1f,1f,1f)); //TODO: make distance userinput
-            //    mainCamera.transform.position = RandomPoint(room, targetObject, new Vector3(1f, 1f, 1f)); //TODO: make distance userinput
+            ///////////////////////// below line works for single room pipeline
+            //mainCamera.transform.position = RandomPointInAnnulus(targetObject.transform.position,this.minDistance,this.maxDistance);
 
-            //}
+            if (attempts == 0)
+            {
+                cameraSet = false;
+                break;
+            }
 
-            mainCamera.transform.position = RandomPointInAnnulus(targetObject.transform.position,this.minDistance,this.maxDistance);
+            Vector3[] positions = getCameraPositions(targetObject);
+            mainCamera.transform.position = positions[UnityEngine.Random.Range(0, positions.Length)];
+            //Debug.Log(mainCamera.transform.position);
+
             mainCamera.transform.LookAt(targetObject.transform);
-            randomized = IsVisibleFrom(renderer, mainCamera) & (mainCamera.transform.position.y > this.minHeight);
+            randomized = IsVisibleFrom(targetObject, mainCamera) & (mainCamera.transform.position.y > this.minHeight);
+            attempts -= 1;
         } while (!randomized);
+
+        return cameraSet;
     }
 
+    public Vector3[] getCameraPositions(GameObject targetObject)
+    {
+        var randomDistance = UnityEngine.Random.Range(this.minDistance, this.maxDistance);
+        Vector3 position1 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 1.5f), 0) + targetObject.transform.forward * randomDistance;
+        Vector3 position2 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 1.5f), 0) - targetObject.transform.forward * randomDistance;
+        Vector3 position3 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 1.5f), 0) + targetObject.transform.right * randomDistance;
+        Vector3 position4 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 1.5f), 0) - targetObject.transform.right * randomDistance;
+        Vector3[] positions = { position1, position2, position3, position4};
+        return positions;
+    }
     public Vector3 RandomPointInAnnulus(Vector3 origin, float minRadius, float maxRadius)
     {
 
@@ -69,10 +86,18 @@ public class CameraHelper: Helper
         return point;
     }
 
-    private bool IsVisibleFrom(Renderer renderer, Camera camera)
+    private bool IsVisibleFrom(GameObject targetModel, Camera camera)
     {
-        Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
-        return GeometryUtility.TestPlanesAABB(planes, renderer.bounds);
+        RaycastHit hit;
+        if (Physics.Linecast(camera.transform.position, targetModel.GetComponentInChildren<Renderer>().bounds.center, out hit))
+        {
+            if (hit.transform.name != targetModel.name)
+            {
+                Debug.Log(targetModel.name + " occluded by " + hit.transform.name);
+                return false;
+            }
+        }
+        return true;
     }
 
     private static Vector3 RandomPointInBounds(Bounds bounds)
