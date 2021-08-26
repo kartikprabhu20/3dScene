@@ -9,7 +9,7 @@ using UnityEngine.UI;
 public class RoomPipeline : Pipeline
 {
     public string[] exceptionObjects = { "wall", "floor" };
-
+    string currentCategory = "";
     private int pipelineType = PipelineType.ROOM_PIPELINE;
    
     public RoomPipeline(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper, LightManager lightHelper)
@@ -33,20 +33,66 @@ public class RoomPipeline : Pipeline
 
     public override GameObject getRoomObject()
     {
-        int roomIndex = base.random.Next(base.roomPaths.Count);
+        if (base.currentRoom != null)
+        {
+            Transform[] allChildren = base.currentRoom.GetComponentsInChildren<Transform>();
+            foreach (Transform child in allChildren)
+            {
+                if (child.name != base.currentRoom.name)
+                {
+                    child.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        Debug.Log("room list" + base.roomPaths.Count.ToString());
+
+       
+        //if (currentCategory != getModelCategory())
+        //{
+        //    roomCacheDictionary = new Dictionary<string, string>();
+        //}
+
+        int roomIndex = 0;
+        roomIndex = base.random.Next(base.roomPaths.Count);
+        
         string objPath = base.roomPaths[roomIndex];
-        string mtlPath =  base.roomMtlPaths[roomIndex];
+        string mtlPath = base.roomMtlPaths[roomIndex];
 
-        try
+        if (roomCacheDictionary.ContainsKey(objPath))
         {
-            base.currentRoom = new OBJLoader().Load(objPath, mtlPath, base.origin);
-        }
-        catch
-        {
-            base.currentRoom = new OBJLoader().Load(objPath, base.origin);
-        }
+            //Logger.WriteLine(objPath);
+            //Logger.WriteLine(roomCacheDictionary[objPath]);
 
-        base.currentRoom.name = "room";
+            //Debug.Log(objPath);
+            //Debug.Log(roomCacheDictionary[objPath]);
+
+            base.currentRoom = GameObject.Find(roomCacheDictionary[objPath]);
+            Transform[] allChildren = base.currentRoom.GetComponentsInChildren<Transform>(true);
+            foreach (Transform child in allChildren)
+            {
+                child.gameObject.SetActive(true);
+            }
+
+            base.currentRoom.transform.position = base.origin;
+        }
+        //else
+        //{
+        //    //Debug.Log("room index" + objPath);
+
+        //    try
+        //    {
+        //        base.currentRoom = new OBJLoader().Load(objPath, mtlPath, base.origin);
+        //    }
+        //    catch
+        //    {
+        //        base.currentRoom = new OBJLoader().Load(objPath, base.origin);
+        //    }
+
+        //    base.currentRoom.name = "room" + roomCacheDictionary.Count.ToString();
+        //    roomCacheDictionary.Add(objPath, base.currentRoom.name);
+
+        //}
         return base.currentRoom;
     }
 
@@ -70,7 +116,7 @@ public class RoomPipeline : Pipeline
         return base.currentModel;
     }
 
-    public override void replaceModel(MonoBehaviour mono, Vector3 origin)
+    public override bool replaceModel(MonoBehaviour mono, Vector3 origin)
     {
         Debug.Log("replaceModel");
         List<GameObject> matchingObjects = new List<GameObject>();
@@ -78,7 +124,7 @@ public class RoomPipeline : Pipeline
         int i = 0;
         foreach (Transform child in allChildren)
         {
-            if (child.name == getModelCategory())
+            if (child.name.ToLower().Contains(getModelCategory().ToLower()))
             {
                 i += 1;
                 matchingObjects.Add(child.gameObject);
@@ -91,14 +137,15 @@ public class RoomPipeline : Pipeline
         if (matchingObjects.Count < 1)
         {
             checkIntersection(base.currentRoom, base.currentModel, origin);
-            return;
+            return false;
         }
 
         GameObject reference = matchingObjects[random.Next(matchingObjects.Count)];
-        modelHelper.modifyScale(base.currentModel, reference);
+        bool rotate = modelHelper.modifyScale(base.currentModel, reference);
         //model.transform.parent = reference.transform.parent;
 
-        base.currentModel.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
+        Vector3 referencePosition = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
+        base.currentModel.transform.position = new Vector3(referencePosition.x, modelHelper.GetMeshHierarchyBounds(base.currentModel).size.y / 2, referencePosition.z);
         base.currentModel.transform.rotation = reference.transform.rotation;
         reference.SetActive(false);
         GameObject.DestroyImmediate(reference);
@@ -106,7 +153,7 @@ public class RoomPipeline : Pipeline
         checkIntersection(base.currentRoom, base.currentModel, origin);
 
         cameraHelper.getMainCamera().transform.LookAt(base.currentModel.transform);
-        return;
+        return rotate;
     }
 
     private void checkIntersection(GameObject room, GameObject model, Vector3 origin)

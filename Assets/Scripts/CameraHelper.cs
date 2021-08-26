@@ -5,7 +5,7 @@ public class CameraHelper: Helper
 {
     private Camera mainCamera;
     private float minDistance = 1.0f;
-    private float maxDistance= 1.2f;
+    private float maxDistance= 1.5f;
     private float minHeight = 0.25f;
     public string[] commonObjects = {};
 
@@ -67,11 +67,15 @@ public class CameraHelper: Helper
     public Vector3[] getCameraPositions(GameObject targetObject)
     {
         var randomDistance = UnityEngine.Random.Range(this.minDistance, this.maxDistance);
-        Vector3 position1 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 1.5f), 0) + targetObject.transform.forward * randomDistance;
-        Vector3 position2 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 1.5f), 0) - targetObject.transform.forward * randomDistance;
-        Vector3 position3 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 1.5f), 0) + targetObject.transform.right * randomDistance;
-        Vector3 position4 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 1.5f), 0) - targetObject.transform.right * randomDistance;
-        Vector3[] positions = { position1, position2, position3, position4};
+        //Vector3 position1 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 0.5f), 0) + targetObject.transform.forward * randomDistance;
+        //Vector3 position2 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 0.5f), 0) + targetObject.transform.forward * randomDistance + targetObject.transform.right * 0.5f;
+        //Vector3 position3 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 0.5f), 0) + targetObject.transform.forward * randomDistance - targetObject.transform.right * 0.5f;
+        //Vector3 position4 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 0.5f), 0) + targetObject.transform.forward * randomDistance + targetObject.transform.right * 0.5f;
+
+        //Vector3 position1 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 0.5f), 0) - targetObject.transform.right * randomDistance;
+        Vector3 position2 = targetObject.transform.position + new Vector3(0, UnityEngine.Random.Range(this.minHeight, this.minHeight + 0.5f), 0) - targetObject.transform.forward * randomDistance + targetObject.transform.right * UnityEngine.Random.Range(-0.5f,0.5f);
+
+        Vector3[] positions = {position2};
         return positions;
     }
     public Vector3 RandomPointInAnnulus(Vector3 origin, float minRadius, float maxRadius)

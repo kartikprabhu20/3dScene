@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Dummiesman;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,6 +12,7 @@ public abstract class AbstractPipeline
 {
     public abstract int PipeLineType { get; set; }
     public abstract GameObject getRoomObject();
+    public abstract void skipRoomPath();
     public abstract GameObject getModelObject();
     public abstract int getModelCount();
     public abstract void setModelCount(int modelCount);
@@ -25,7 +27,7 @@ public abstract class AbstractPipeline
     public abstract List<GameObject> setupLigtSources(GameObject model, GameObject room);
 
     public abstract void execute(MonoBehaviour mono, List<Material> skyBoxList);
-    public abstract void replaceModel(MonoBehaviour mono, Vector3 origin);
+    public abstract bool replaceModel(MonoBehaviour mono, Vector3 origin);
 }
 
 
@@ -52,12 +54,14 @@ public class Pipeline : AbstractPipeline
     protected List<string> modelNames = new List<string>();
 
     protected string[] categories;
-    protected string rootRoomPath, rootMaterialPath, dataPath,outputPath;
+    protected string rootRoomPath, rootMaterialPath, dataPath,outputPath, currentRoomPath;
     protected GameObject currentRoom, currentModel;
     protected System.Random random = new System.Random();
 
     protected const string default_room_path = "Assets/resources/default_room/";
     protected const string default_model_path = "Assets/resources/default_model/model.obj";
+
+    protected Dictionary<string, string> roomCacheDictionary = new Dictionary<string, string>();
 
     public override int PipeLineType { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
 
@@ -75,6 +79,7 @@ public class Pipeline : AbstractPipeline
     void updateRoomPathList(string rootRoomPath)
     {
         //Debug.Log("updateRoomPathList");
+
         string[] dirList = Directory.GetDirectories(rootRoomPath);
         foreach (string dir in dirList)
         {
@@ -84,12 +89,42 @@ public class Pipeline : AbstractPipeline
 
         roomPaths.AddRange(Directory.GetFiles(rootRoomPath, "*.obj"));
         roomMtlPaths.AddRange(Directory.GetFiles(rootRoomPath, "*.mtl"));
+
+        //Debug.Log(roomPaths.Count);
+
+        for (int i=0; i < roomPaths.Count; i++)
+        {
+            GameObject room;
+            try
+            {
+                room = new OBJLoader().Load(roomPaths[i], roomMtlPaths[i]);
+            }
+            catch
+            {
+                room = new OBJLoader().Load(roomPaths[i]);
+            }
+
+            room.name = "room" + roomCacheDictionary.Count.ToString();
+
+            roomCacheDictionary.Add(roomPaths[i],room.name);
+
+            Transform[] allChildren = room.GetComponentsInChildren<Transform>();
+            foreach (Transform child in allChildren)
+            {
+                if (child.name != room.name)
+                {
+                    child.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        Logger.WriteLine("updateRoomPathList completed");
+
     }
 
     public override void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory, Vector3 origin)
     {
         //Debug.Log("init1");
-
         this.dataPath = dataPath;
         this.outputPath = outputPath;
         this.rootMaterialPath = rootMaterialPath;
@@ -107,7 +142,6 @@ public class Pipeline : AbstractPipeline
 
         this.customImageSynthesis = new CustomImageSynthesis(cameraHelper.getMainCamera());
 
-        Debug.Log("init");
         foreach (string category in this.categories)
         {
             int catagoryCount = 0;
@@ -180,7 +214,7 @@ public class Pipeline : AbstractPipeline
         {
             string fileName = Path.GetFileName(filePath);
             string number = new String(fileName.Where(Char.IsDigit).ToArray());
-            Debug.Log(number);
+            //Debug.Log(number);
             targetName = (targetName <= Int32.Parse(number)) ? Int32.Parse(number) : targetName;
         }
 
@@ -238,7 +272,12 @@ public class Pipeline : AbstractPipeline
         return cameraHelper.getMainCamera();
     }
 
-    public override void replaceModel(MonoBehaviour mono, Vector3 origin)
+    public override bool replaceModel(MonoBehaviour mono, Vector3 origin)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override void skipRoomPath()
     {
         throw new NotImplementedException();
     }

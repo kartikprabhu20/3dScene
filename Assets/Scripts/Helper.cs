@@ -61,15 +61,24 @@ public class Helper
     }
 
 
-    public void modifyScale(GameObject target, GameObject reference)
+    public bool modifyScale(GameObject target, GameObject reference)
     {
         var currentBounds = GetMeshHierarchyBounds(target);
         var currentSize = currentBounds.size;
         var categoryReferenceBounds = reference.GetComponent<Renderer>().bounds;
         var categoryReferenceSize = categoryReferenceBounds.size;
-        float minimumNewSizeRatio = Math.Min(categoryReferenceSize.x / currentSize.x, Math.Min(categoryReferenceSize.y / currentSize.y, categoryReferenceSize.z / currentSize.z));
-        //float minimumNewSizeRatio = (categoryReferenceSize.y / currentSize.y); //Only match height
+
+        bool rotate = false;
+        if ((categoryReferenceSize.z > categoryReferenceSize.x && currentSize.x > currentSize.z) || (categoryReferenceSize.x > categoryReferenceSize.z && currentSize.z > currentSize.x))
+        {
+            Debug.Log("modifyScale rotate");
+            rotate = true;
+        }
+        float minimumNewSizeRatio = rotate ? Math.Min(categoryReferenceSize.x / currentSize.z, Math.Min(categoryReferenceSize.y / currentSize.y, categoryReferenceSize.z / currentSize.x))
+                                           : Math.Min(categoryReferenceSize.x / currentSize.x, Math.Min(categoryReferenceSize.y / currentSize.y, categoryReferenceSize.z / currentSize.z));
         target.transform.localScale = target.transform.localScale * minimumNewSizeRatio;
+
+        return rotate;
     }
 
 }

@@ -93,7 +93,6 @@ public class RoomHelper: Helper
     {
         string[] dirList = Directory.GetDirectories(rootTexturePath);
 
-
         Dictionary<string, string> textureDictionary = new Dictionary<string, string>();
 
         Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>();
@@ -103,15 +102,20 @@ public class RoomHelper: Helper
             if (dirList.Contains(textureFolder))//Check if there is a texturefolder with name same as category
             {
                 string[] textureList = Directory.GetFiles(textureFolder);
+                string[] textureDirList = Directory.GetDirectories(textureFolder);
+
+                string[] combinedList = textureList.ToList().Concat(textureDirList.ToList()).ToArray();
+
                 Renderer rend = child.GetComponent<Renderer>();
                 if (rend != null)
                 {
                     //Debug.Log("applying texture");
                     if (!textureDictionary.ContainsKey(child.name))
-                        textureDictionary.Add(child.name, textureList[random.Next(textureList.Length)]);//As we iterate through the texturefolder add it to dictionary as a cache
                     {
+                        textureDictionary.Add(child.name, combinedList[random.Next(combinedList.Length)]);//As we iterate through the texturefolder add it to dictionary as a cache
                     }
-                    rend.material.mainTexture = loadTexture(textureDictionary[child.name]);
+                    
+                     loadTexture(textureDictionary[child.name], rend);
 
                     if (child.name == "floor") {
                         rend.material.mainTextureScale = new Vector2(5, 5);//Tiling 10x10
@@ -124,15 +128,37 @@ public class RoomHelper: Helper
     }
 
 
-    Texture2D loadTexture(string filePath)
+    void loadTexture(string filePath, Renderer rend)
     {
-        this.tex = new Texture2D(2, 2);
+        
         if (File.Exists(filePath))
         {
+            this.tex = new Texture2D(2, 2);
             byte[] fileData = File.ReadAllBytes(filePath);
             this.tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
+            rend.material.mainTexture = tex;
         }
+        else if (Directory.Exists(filePath)){
 
-        return tex;
+            string[] textureList = Directory.GetFiles(filePath);
+
+            Debug.Log(filePath);
+            rend.material.EnableKeyword("_NORMALMAP");
+            rend.material.EnableKeyword("_METALLICGLOSSMAP");
+
+            TextureHelper texHelper = new TextureHelper();
+            foreach (string texture in textureList)
+            {
+                string textureKey = texHelper.getTextureKey(texture);
+                rend.material.EnableKeyword(textureKey);
+
+                this.tex = new Texture2D(2, 2);
+                byte[] fileData = File.ReadAllBytes(texture);
+                this.tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
+                rend.material.SetTexture(textureKey, this.tex);
+
+            }
+ 
+        }
     }
 }

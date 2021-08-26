@@ -74,9 +74,9 @@ public class SinglePipeline : Pipeline
         return base.currentModel;
     }
 
-    public override void replaceModel(MonoBehaviour mono, Vector3 origin)
+    public override bool replaceModel(MonoBehaviour mono, Vector3 origin)
     {
-        return;
+        return false;
     }
 
 }

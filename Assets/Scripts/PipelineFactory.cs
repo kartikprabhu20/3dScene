@@ -1,13 +1,11 @@
 ﻿public class PipelineFactory
 {
-    private static PipelineFactory instance = null;
-    private static readonly object padlock = new object();
     private RoomHelper roomHelper;
     private ModelHelper modelHelper;
     private CameraHelper cameraHelper;
     private LightManager lightHelper;
 
-    private PipelineFactory(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper, LightManager lightHelper)
+    public PipelineFactory(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper, LightManager lightHelper)
     {
         this.roomHelper = roomHelper;
         this.modelHelper = modelHelper;
@@ -15,17 +13,6 @@
         this.lightHelper = lightHelper;
 
     }
-
-    public static PipelineFactory GetInstance(RoomHelper roomHelper, ModelHelper modelHelper, CameraHelper cameraHelper, LightManager lightHelper)
-    {
-        lock (padlock)
-        {
-
-            instance = new PipelineFactory(roomHelper, modelHelper,cameraHelper, lightHelper);
-            return instance;
-        }
-    }
-
 
     public Pipeline getPipeline(int id, CameraHelper cameraHelper)
     {

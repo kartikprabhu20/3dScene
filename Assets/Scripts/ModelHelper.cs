@@ -23,11 +23,16 @@ public class ModelHelper : Helper
         model.transform.position = origin + new Vector3(0, GetMeshHierarchyBounds(model).size.y/2,0);
         model.AddComponent<MeshRenderer>();
         Rigidbody gameObjectsRigidBody = model.AddComponent<Rigidbody>();
+        model.GetComponent<Rigidbody>().isKinematic = false;
+        model.GetComponent<Rigidbody>().collisionDetectionMode = UnityEngine.CollisionDetectionMode.Continuous;
         model.GetComponent<Rigidbody>().useGravity = false;
+
         //model.GetComponent<Rigidbody>().drag = 10;
         //model.GetComponent<Rigidbody>().mass = 10;
         base.attachMeshColliders(model);
         changeShader(model);
+
+        //changeTexutre(model);
     }
 
     public void changeShader(GameObject gameObject)

@@ -39,6 +39,9 @@ public class ModelManager : MonoBehaviour
     public Text modelCount;
 
     public Button nextModelButton;
+    public Button randomiseTextureButton;
+    public Button randomiseLightButton;
+    public Button randomiseCameraButton;
 
     public string[] categories;
     public GameObject[] categoryReference;
@@ -70,14 +73,18 @@ public class ModelManager : MonoBehaviour
     private List<GameObject> lightSourceList = new List<GameObject>();
     public string[] exceptionObjects = { "wall","floor"};
 
+
     // Start is called before the first frame update
     void Start()
     {
+
+        Logger.WriteLine("Start");
+
         roomHelper = new RoomHelper(shader);
         modelHelper = new ModelHelper(shader);
         lightHelper = new LightManager(lightSources);
         cameraHelper = new CameraHelper(MainCamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
-        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE); //Defualt
+        currentPipeline = new PipelineFactory(roomHelper, modelHelper, cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE); //Defualt
 
         //===============================TODO: remove
         categoriesInputField.text = "chair,bed,desk,wardrobe,table,bookcase,sofa";
@@ -86,12 +93,12 @@ public class ModelManager : MonoBehaviour
 
         modelsPathField.text = "/Users/apple/OVGU/Thesis/Dataset/pix3d/model/";
         roomPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/3d-scene/";
-        materialPathField.text = "/Users/apple/OVGU/Thesis/texture_library";
-        outputPathField.text = "/Users/apple/OVGU/Thesis/s2r3dfree_v2/";
+        materialPathField.text = "/Users/apple/OVGU/Thesis/scenenet/robotvault-downloadscenenet-cfe5ab85ddcc/texture_library";
+        outputPathField.text = "/Users/apple/OVGU/Thesis/s2r3dfree_v3/";
         modelCountInputField.text = "10";
 
-        cameraMinInputField.text = "1";
-        cameraMaxInputField.text = "1.2";
+        cameraMinInputField.text = "0.75";
+        cameraMaxInputField.text = "1.5";
         cameraHeightInputField.text = "0.25";
 
         //===============================TODO: remove
@@ -135,32 +142,32 @@ public class ModelManager : MonoBehaviour
 
 
         // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
-        clearEnvironment();
+        //clearEnvironment();
 
-        Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
-        currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
+        //Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        //currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
 
-        GameObject room = currentPipe.getRoomObject();
-        currentPipe.setupRoom(room);
+        //GameObject room = currentPipe.getRoomObject();
+        //currentPipe.setupRoom(room);
 
-        GameObject model = currentPipe.getModelObject();
-        currentPipe.setupModel(model);
+        //GameObject model = currentPipe.getModelObject();
+        //currentPipe.setupModel(model);
 
-        Vector3 origin = model.transform.position;
-        bool cameraNotSet = true;
-        do
-        {
-            Debug.Log("camera setting");
-            replaceModel(room, model, currentPipe.getModelCategory(), currentPipe.getMainCamera(), origin);
-            cameraNotSet = !currentPipe.setupCamera(model);
-        } while (cameraNotSet);
+        //Vector3 origin = model.transform.position;
+        //bool cameraNotSet = true;
+        //do
+        //{
+        //    Debug.Log("camera setting");
+        //    currentPipeline.replaceModel(this,origin);
+        //    cameraNotSet = !currentPipe.setupCamera(model);
+        //} while (cameraNotSet);
 
-        lightSourceList = currentPipe.setupLigtSources(model, room);
-        currentPipe.execute(this, skyBoxList);
+        //lightSourceList = currentPipe.setupLigtSources(model, room);
+        //currentPipe.execute(this, skyBoxList);
 
         // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
-        //multiThread();
+        multiThread();
     }
 
     public void clearGameObject(GameObject gameObject)
@@ -199,9 +206,14 @@ public class ModelManager : MonoBehaviour
         }
     }
 
+    public void snap()
+    {
+        currentPipeline.execute(this, skyBoxList);
+    }
+
     public void singleEnvironment()
     {
-        Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
+        Pipeline currentPipe = new PipelineFactory(roomHelper, modelHelper,cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
         currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
         StartCoroutine(buildEnv(currentPipe));
     }
@@ -209,12 +221,18 @@ public class ModelManager : MonoBehaviour
     public void randomizeEnvironment()
     {
         nextModelButton.gameObject.SetActive(true);
-        currentPipeline = PipelineFactory.GetInstance(roomHelper, modelHelper,cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        randomiseCameraButton.gameObject.SetActive(true);
+        randomiseLightButton.gameObject.SetActive(true);
+        randomiseTextureButton.gameObject.SetActive(true);
+
+        currentPipeline = new PipelineFactory(roomHelper, modelHelper,cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
         currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
 
         setEnv();
        //StartCoroutine(buildEnv(currentPipe));
     }
+
+
 
     public void setEnv()
     {
@@ -224,10 +242,10 @@ public class ModelManager : MonoBehaviour
         do
         {
             room = currentPipeline.getRoomObject();
-            Transform[] allChildren = room.GetComponentsInChildren<Transform>();
+            Transform[] allChildren = room.GetComponentsInChildren<Transform>(true);
             foreach (Transform child in allChildren)
             {
-                if (currentPipeline.getModelCategory() == child.name)
+                if (currentPipeline.getModelCategory().ToLower() == child.name.ToLower())
                 {
                     roomDoesNotContainsCategory = false;
                     break;
@@ -250,7 +268,10 @@ public class ModelManager : MonoBehaviour
         {
             Debug.Log("camera setting");
             //replaceModel(room, model, currentPipe.getModelCategory(), currentPipe.getMainCamera(), origin);
-            currentPipeline.replaceModel(this, origin);
+            if (currentPipeline.replaceModel(this, origin))
+            {
+                model.transform.eulerAngles = new Vector3(0, 90, 0);
+            }
             cameraNotSet = !currentPipeline.setupCamera(model);
         } while (cameraNotSet);
 
@@ -258,6 +279,33 @@ public class ModelManager : MonoBehaviour
 
     }
 
+    public void onRandomiseTexture()
+    {
+        currentPipeline.setupRoom(room);
+
+    }
+
+    public void onRandomiseCamera()
+    {
+
+        bool cameraNotSet = true;
+        do
+        {
+            cameraNotSet = !currentPipeline.setupCamera(model);
+        } while (cameraNotSet);
+
+    }
+
+    public void onRandomiseLight()
+    {
+        foreach (GameObject gameObject in lightSourceList)
+        {
+            clearGameObject(gameObject);
+        }
+
+        lightSourceList = currentPipeline.setupLigtSources(model, room);
+
+    }
 
     public void onNextModel()
     {
@@ -266,21 +314,22 @@ public class ModelManager : MonoBehaviour
 
     IEnumerator onNextModelTrig()
     {
-        bool cameraNotSet = true;
-        do
-        {
-            cameraNotSet = !currentPipeline.setupCamera(model);
-        } while (cameraNotSet);
 
         currentPipeline.execute(this, skyBoxList);
-
 
         //Wait till last save is complete
         yield return new WaitForEndOfFrame();
         yield return new WaitForEndOfFrame();
         yield return new WaitForEndOfFrame();
 
-        clearEnvironment(room, model);
+        //clearEnvironment(room, model);
+        clearGameObject(model);
+
+        foreach (GameObject gameObject in lightSourceList)
+        {
+            clearGameObject(gameObject);
+        }
+
         setEnv();
     }
 
@@ -296,13 +345,12 @@ public class ModelManager : MonoBehaviour
             i += 50;
             Vector3 origin = new Vector3(0, 0, i);
 
-            Camera maincamera = GameObject.Instantiate(MainCamera);
             //maincamera.tag = category;
-            cameraHelper = new CameraHelper(maincamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
+            cameraHelper = new CameraHelper(GameObject.Instantiate(MainCamera), cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
             roomHelper = new RoomHelper(shader);
             modelHelper = new ModelHelper(shader);
-            lightHelper = new LightManager(lightSources);
-            Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE,cameraHelper);
+            lightHelper = new LightManager(GameObject.Instantiate(lightSources));
+            Pipeline currentPipe = new PipelineFactory(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
             currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, category, categoryCountInputField.text, origin);
 
             Debug.Log("multiThread");
@@ -368,7 +416,7 @@ public class ModelManager : MonoBehaviour
         clearEnvironment();
         //StartCoroutine(LoadObjects());
 
-        Pipeline currentPipe = PipelineFactory.GetInstance(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
+        Pipeline currentPipe = new PipelineFactory(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
         currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
 
         StartCoroutine(buildEnv2(currentPipe));
@@ -376,24 +424,28 @@ public class ModelManager : MonoBehaviour
 
     IEnumerator buildEnv2(Pipeline currentPipe)
     {
+        Logger.WriteLine("buildEnv2");
+
         startTime.text = getCurrentTime();
         endTime.text = "";
         Debug.Log("buildEnv2");
-        //startTime.text = getCurrentTime();
-        //endTime.text = "";
+        int failSafeAttempts = 10;
         for (int i = 0; i < currentPipe.getModelCount(); i++)
         {
+            Logger.WriteLine("Model Number: " + i.ToString());
             //clearEnvironment();
             GameObject model = currentPipe.getModelObject();
             modelCount.text = i.ToString();
             bool roomDoesNotContainsCategory = true;
+
             do
             {
+                int attempts = 0;
                 GameObject room = currentPipe.getRoomObject();
-                Transform[] allChildren = room.GetComponentsInChildren<Transform>();
+                Transform[] allChildren = room.GetComponentsInChildren<Transform>(true);
                 foreach (Transform child in allChildren)
                 {
-                    if (currentPipe.getModelCategory() == child.name)
+                    if (child.name.ToLower().Contains(currentPipe.getModelCategory().ToLower()))
                     {
                         roomDoesNotContainsCategory = false;
                         break;
@@ -402,7 +454,9 @@ public class ModelManager : MonoBehaviour
 
                 if (roomDoesNotContainsCategory)
                 {
-                    clearGameObject(room);
+                    Logger.WriteLine("roomDoesNotContainsCategory");
+                    //clearGameObject(room);
+                    //room.SetActive(false);
                     continue;
                 }
 
@@ -413,17 +467,35 @@ public class ModelManager : MonoBehaviour
                 bool cameraNotSet = true;
                 do
                 {
+                    attempts++;
+                    if (attempts >= failSafeAttempts)
+                    {
+                        Logger.WriteLine("failSafeAttempts reached");
+                        break;
+                    }
                     Debug.Log("camera setting");
                     //replaceModel(room, model, currentPipe.getModelCategory(), currentPipe.getMainCamera(), origin);
-                    currentPipe.replaceModel(this, origin);
+                    if (replaceModel(room, model, currentPipe.getModelCategory(), currentPipe.getMainCamera(), origin))
+                    {
+                        model.transform.eulerAngles = new Vector3(0, 90, 0);
+                    }
                     cameraNotSet = !currentPipeline.setupCamera(model);
                 } while (cameraNotSet);
+
+                if (attempts >= failSafeAttempts)
+                {
+                    clearGameObject(model);
+                    //clearEnvironment(room, model);
+                    foreach (GameObject gameObject in lightSourceList)
+                    {
+                        clearGameObject(gameObject);
+                    }
+                    break;
+                }
 
                 lightSourceList = currentPipe.setupLigtSources(model, room);
 
                 currentPipe.execute(this, skyBoxList);
-
-                //modelCount.text = i.ToString();
 
                 //Wait till last save is complete
                 yield return new WaitForEndOfFrame();
@@ -436,13 +508,16 @@ public class ModelManager : MonoBehaviour
 
                 yield return room;
 
-                clearEnvironment(room, model);
+                clearGameObject(model);
+                //clearEnvironment(room, model);
+                foreach (GameObject gameObject in lightSourceList)
+                {
+                    clearGameObject(gameObject);
+                }
 
             } while (roomDoesNotContainsCategory);
         }
         endTime.text = getCurrentTime();
-        //endTime.text = getCurrentTime();
-
     }
 
     // Invoked when the value of the text field changes.
@@ -453,47 +528,44 @@ public class ModelManager : MonoBehaviour
         cameraHelper = new CameraHelper(MainCamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
     }
 
-    private void replaceModel(GameObject room, GameObject model, string category, Camera maincamera, Vector3 origin)
+    private bool replaceModel(GameObject room, GameObject model, string category, Camera maincamera, Vector3 origin)
     {
         Debug.Log("replaceModel");
         List<GameObject> matchingObjects = new List<GameObject>();
-        Transform[] allChildren = room.GetComponentsInChildren<Transform>();
-        int i = 0;
+        Transform[] allChildren = room.GetComponentsInChildren<Transform>(true);
         foreach (Transform child in allChildren)
         {
-            if (child.name == category)
+            if (child.name.ToLower().Contains(category.ToLower()))
             {
-                i += 1;
                 matchingObjects.Add(child.gameObject);
-                //Debug.Log(child.name+ i.ToString());
-                //child.name = child.name + i.ToString();
             }
         }
 
-        Debug.Log("matchingObjects.Count:"+ matchingObjects.Count.ToString());
+        Debug.Log("matchingObjects.Count:" + matchingObjects.Count.ToString());
         if (matchingObjects.Count < 1)
         {
             checkIntersection(room, model, origin);
-            return;
+            return false;
         }
 
         GameObject reference = matchingObjects[random.Next(matchingObjects.Count)];
-        modelHelper.modifyScale(model, reference);
+        bool rotate = modelHelper.modifyScale(model, reference);
         //model.transform.parent = reference.transform.parent;
 
-        model.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
-        model.transform.position = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
+        Vector3 referencePosition = reference.gameObject.GetComponent<MeshRenderer>().bounds.center;
+        model.transform.position = new Vector3(referencePosition.x, modelHelper.GetMeshHierarchyBounds(model).size.y / 2, referencePosition.z);
         model.transform.rotation = reference.transform.rotation;
+
         reference.SetActive(false);
-        DestroyImmediate(reference);
+        //DestroyImmediate(reference);
 
         checkIntersection(room, model, origin);
 
         maincamera.transform.LookAt(model.transform);
-        return;
+        return rotate;
     }
 
-    private void checkIntersection(GameObject room,GameObject model,Vector3 origin)
+    private void checkIntersection(GameObject room, GameObject model, Vector3 origin)
     {
         Debug.Log("checkIntersection");
         Transform[] allChildren = room.GetComponentsInChildren<Transform>();
@@ -505,15 +577,17 @@ public class ModelManager : MonoBehaviour
                 if (pos == -1) //If exceptionObjects string array doesnt have the name of the child, delete the child
                 {
                     Debug.Log("Bounds intersecting");
-                    if(child.name == "bed")
+                    if (child.name == "bed")
                     {
-                        string[] objectsToDestory = { "duvet", "pillow"};
+                        string[] objectsToDestory = { "duvet", "pillow" };
                         foreach (string objectToDestroy in objectsToDestory)
                         {
-                            FindAndDestroy(room,objectToDestroy);
+                            FindAndDestroy(room, objectToDestroy);
                         }
                     }
-                    DestroyImmediate(child.gameObject);
+
+                    child.gameObject.SetActive(false);
+                    //DestroyImmediate(child.gameObject);
                 }
                 //else if (pos == 0)//if wall is intersecting then go back to origin
                 //{
@@ -526,7 +600,7 @@ public class ModelManager : MonoBehaviour
         return;
     }
 
-    private void FindAndDestroy(GameObject room,string objectName)
+    private void FindAndDestroy(GameObject room, string objectName)
     {
         try
         {
@@ -538,7 +612,9 @@ public class ModelManager : MonoBehaviour
                     GameObject objectToDestroy = child.gameObject;
                     if (objectToDestroy != null)
                     {
-                        DestroyImmediate(objectToDestroy);
+                        //DestroyImmediate(objectToDestroy);
+                        objectToDestroy.SetActive(false);
+
                     }
                 }
             }
