@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
+using System.Linq;
 
 public class ModelHelper : Helper
 {
@@ -20,7 +22,7 @@ public class ModelHelper : Helper
 
 
         model.name = "target_model";
-        model.transform.position = origin + new Vector3(0, GetMeshHierarchyBounds(model).size.y/2,0);
+        model.transform.position = origin + new Vector3(0, GetMeshHierarchyBounds(model).size.y / 2, 0);
         model.AddComponent<MeshRenderer>();
         Rigidbody gameObjectsRigidBody = model.AddComponent<Rigidbody>();
         model.GetComponent<Rigidbody>().isKinematic = false;
@@ -32,7 +34,24 @@ public class ModelHelper : Helper
         base.attachMeshColliders(model);
         changeShader(model);
 
-        //changeTexutre(model);
+    }
+
+    public void changeTexutre(GameObject model, string category, string rootTexturePath)
+    {
+        string[] dirList = Directory.GetDirectories(rootTexturePath);
+        string textureFolder = rootTexturePath + Path.DirectorySeparatorChar + category;
+        if (dirList.Contains(textureFolder))//Check if there is a texturefolder with name same as category
+        {
+            string[] textureList = Directory.GetFiles(textureFolder);
+            string[] textureDirList = Directory.GetDirectories(textureFolder);
+
+            string[] combinedList = textureList.ToList().Concat(textureDirList.ToList()).ToArray();
+
+            Transform[] allChildren = model.GetComponentsInChildren<Transform>();
+            string texturePath = combinedList[random.Next(combinedList.Length)];
+
+            textureChildren(model.gameObject, texturePath);
+        }
     }
 
     public void changeShader(GameObject gameObject)

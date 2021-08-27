@@ -42,6 +42,7 @@ public class ModelManager : MonoBehaviour
     public Button randomiseTextureButton;
     public Button randomiseLightButton;
     public Button randomiseCameraButton;
+    public Button randomiseModelTextureutton;
 
     public string[] categories;
     public GameObject[] categoryReference;
@@ -224,6 +225,7 @@ public class ModelManager : MonoBehaviour
         randomiseCameraButton.gameObject.SetActive(true);
         randomiseLightButton.gameObject.SetActive(true);
         randomiseTextureButton.gameObject.SetActive(true);
+        randomiseModelTextureutton.gameObject.SetActive(true);
 
         currentPipeline = new PipelineFactory(roomHelper, modelHelper,cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
         currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
@@ -283,6 +285,11 @@ public class ModelManager : MonoBehaviour
     {
         currentPipeline.setupRoom(room);
 
+    }
+
+    public void onRandomiseModelTexture()
+    {
+        currentPipeline.randomiseModelTexture(model);
     }
 
     public void onRandomiseCamera()

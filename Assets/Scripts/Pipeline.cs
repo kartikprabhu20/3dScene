@@ -23,6 +23,7 @@ public abstract class AbstractPipeline
     public abstract void init(string dataPath, string outputPath, string rootRoomPath, string rootMaterialPath, string categoriesInput, string imagesPerCategory, Vector3 origin);
     public abstract void setupRoom(GameObject room);
     public abstract void setupModel(GameObject model);
+    public abstract void randomiseModelTexture(GameObject room);
     public abstract bool setupCamera(GameObject model);
     public abstract List<GameObject> setupLigtSources(GameObject model, GameObject room);
 
@@ -234,7 +235,15 @@ public class Pipeline : AbstractPipeline
 
     public override void setupModel(GameObject model)
     {
-        modelHelper.setupModel(model,origin);
+        modelHelper.setupModel(model, origin);
+        modelHelper.changeTexutre(model, getModelCategory(), rootMaterialPath);
+
+    }
+
+    public override void randomiseModelTexture(GameObject model)
+    {
+        modelHelper.changeTexutre(model, getModelCategory(), rootMaterialPath);
+
     }
 
     public override int getModelCount()

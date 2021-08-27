@@ -15,7 +15,7 @@ public class RoomHelper: Helper
         "refrigerator", "television","tv","lcd", "lamp","nightStand","fridge", "light","pendant","speaker","laptop", "projector", "keyboard","stereo","dvd",//Devices
         "cup", "pot","plate","bottle","wine", "carafe", "bowl","vase","fruit", "cooker","exhaust","ventilator",//kitchen_dining_hall
         "door", "window", "curtain", "blinds", "carpet", "floor-mat", "painting", //Room
-        "cabinet", "bed", "chair", "sofa", "table", "bookshelf","dresser", "desks", "shelves", "bench","shelf","furniture","drawer","stool", //Furnitures
+        "cabinet", "bed", "chair", "sofa", "table", "bookshelf","dresser", "desks", "shelves", "bench","shelf","furniture","drawer","stool", "bookcase",//Furnitures
         "wall", "floor","ceiling"};
 
     Dictionary<string, string> renameDictionary = new Dictionary<string, string>()
@@ -24,9 +24,7 @@ public class RoomHelper: Helper
             {"light","lamp"},{"pilow","pillow"}
         };
 
-    private System.Random random = new System.Random();
     private Shader shader;
-    private Texture2D tex;
 
     public RoomHelper(Shader shader)
     {
@@ -89,7 +87,7 @@ public class RoomHelper: Helper
 
     }
 
-    public void applyTextures(GameObject gameObject,string rootTexturePath)
+    public void applyTextures(GameObject gameObject, string rootTexturePath)
     {
         string[] dirList = Directory.GetDirectories(rootTexturePath);
 
@@ -106,59 +104,18 @@ public class RoomHelper: Helper
 
                 string[] combinedList = textureList.ToList().Concat(textureDirList.ToList()).ToArray();
 
-                Renderer rend = child.GetComponent<Renderer>();
-                if (rend != null)
+                string texturePath = combinedList[random.Next(combinedList.Length)];
+                if (!textureDictionary.ContainsKey(child.name))
                 {
-                    //Debug.Log("applying texture");
-                    if (!textureDictionary.ContainsKey(child.name))
-                    {
-                        textureDictionary.Add(child.name, combinedList[random.Next(combinedList.Length)]);//As we iterate through the texturefolder add it to dictionary as a cache
-                    }
-                    
-                     loadTexture(textureDictionary[child.name], rend);
-
-                    if (child.name == "floor") {
-                        rend.material.mainTextureScale = new Vector2(5, 5);//Tiling 10x10
-                    }
-
+                    textureDictionary.Add(child.name, texturePath);//As we iterate through the texturefolder add it to dictionary as a cache
                 }
+
+                Renderer rend = child.GetComponent<Renderer>();
+
+                //textureChildren(child.gameObject, textureDictionary[child.name]);
+                loadTexture(texturePath, rend);
                 //break;
             }
-        }
-    }
-
-
-    void loadTexture(string filePath, Renderer rend)
-    {
-        
-        if (File.Exists(filePath))
-        {
-            this.tex = new Texture2D(2, 2);
-            byte[] fileData = File.ReadAllBytes(filePath);
-            this.tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
-            rend.material.mainTexture = tex;
-        }
-        else if (Directory.Exists(filePath)){
-
-            string[] textureList = Directory.GetFiles(filePath);
-
-            Debug.Log(filePath);
-            rend.material.EnableKeyword("_NORMALMAP");
-            rend.material.EnableKeyword("_METALLICGLOSSMAP");
-
-            TextureHelper texHelper = new TextureHelper();
-            foreach (string texture in textureList)
-            {
-                string textureKey = texHelper.getTextureKey(texture);
-                rend.material.EnableKeyword(textureKey);
-
-                this.tex = new Texture2D(2, 2);
-                byte[] fileData = File.ReadAllBytes(texture);
-                this.tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
-                rend.material.SetTexture(textureKey, this.tex);
-
-            }
- 
         }
     }
 }
