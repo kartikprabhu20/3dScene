@@ -214,8 +214,12 @@ public class Pipeline : AbstractPipeline
         foreach (string filePath in files)
         {
             string fileName = Path.GetFileName(filePath);
+            if (fileName == ".DS_Store")
+            {
+                continue;
+            }
+
             string number = new String(fileName.Where(Char.IsDigit).ToArray());
-            //Debug.Log(number);
             targetName = (targetName <= Int32.Parse(number)) ? Int32.Parse(number) : targetName;
         }
 
