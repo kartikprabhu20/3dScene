@@ -15,6 +15,34 @@ The GUI of the application as shown in the figure.
 The users can select the catagories/classes of the furnitures seperated by commma(,).
 The users can also select total images per catagory.
 
+*Path Settings:*
+The user has to feed the paths for input which include room and furniture datasets, the path to textures and the destination path.
+
+Texture Directory format:
+Texture folder<br>
+|_ Furniture1<br>
+|_ Furniture2<br>
+&nbsp; &nbsp;&nbsp; &nbsp;|_ img1<br>
+&nbsp; &nbsp;&nbsp; &nbsp;|_ img2<br>
+
+Room Directory format:
+Room folder<br>
+|_ roomType1<br>
+|_ roomType2<br>
+&nbsp; &nbsp;&nbsp; &nbsp;|_ room1.obj<br>
+&nbsp; &nbsp;&nbsp; &nbsp;|_ room2.obj<br>
+|_room3.obj
+
+Furniture Directory format:
+Furniture folder<br>
+|_ class1<br>
+|_ class2<br>
+&nbsp; &nbsp; &nbsp; &nbsp; |_ model_1_folderName<br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;|_ model.obj<br>
+&nbsp; &nbsp; &nbsp; &nbsp; |_ model_2_folderName<br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;|_ model.obj<br>
+
+
 *Camera Settings:*
 The parameters include minimum height of the camera, and minimum and maximum distance from the target model.
 
