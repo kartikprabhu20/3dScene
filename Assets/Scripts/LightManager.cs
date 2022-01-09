@@ -1,12 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+//using System;
 
 public class LightManager : Helper
 {
     private GameObject lightSources;
     private float lightIntensityLow = 0;
-    private float lightIntensityHigh = 0.75f;
+    private float lightIntensityHigh = 1.25f;
     private float indoorLightIntensityLow = 0f;
     private float indoorLightIntensityHigh = 1.25f;
     private float rangeLow = 10f;
@@ -16,9 +18,22 @@ public class LightManager : Helper
     private int lightYRotationLow = -170;
     private int lightYRotationHigh = -10;
 
-    public LightManager(GameObject lightSources)
+    private List<string> colorList = new List<string>();
+
+    public LightManager(GameObject lightSources, string colorList, string minIntensity, string maxIntensity)
     {
         this.lightSources = lightSources;
+        this.colorList = colorList.Split(',').ToList();
+
+        if (!System.String.IsNullOrEmpty(minIntensity))
+        {
+            this.indoorLightIntensityLow = float.Parse(minIntensity);
+        }
+
+        if (!System.String.IsNullOrEmpty(maxIntensity))
+        {
+            this.indoorLightIntensityHigh = float.Parse(maxIntensity);
+        }
 
     }
 
@@ -41,7 +56,8 @@ public class LightManager : Helper
             }
         }
 
-        string[] allChildren = {"PointLight","SunLight","SpotLight","Ceiling"};
+        //string[] allChildren = {"PointLight","SunLight","SpotLight","Ceiling"};
+        string[] allChildren = { "SunLight" };
         int randomChild = Random.Range(0, allChildren.Length);
         System.Random rnd = new System.Random();
 
@@ -87,8 +103,8 @@ public class LightManager : Helper
             case "SunLight":
                 //sun light
                 GameObject sunLight = lightSources.gameObject.transform.Find("SunLight").gameObject;
-                sunLight.GetComponent<Light>().intensity = Random.Range(lightIntensityLow, lightIntensityHigh);
-                sunLight.gameObject.transform.eulerAngles = new Vector3(Random.Range(lightXRotationLow, lightXRotationHigh), Random.Range(lightYRotationLow, lightYRotationHigh), 0);
+                sunLight.GetComponent<Light>().intensity = 1.25f;//Random.Range(lightIntensityLow, lightIntensityHigh);
+                //sunLight.gameObject.transform.eulerAngles = new Vector3(Random.Range(lightXRotationLow, lightXRotationHigh), Random.Range(lightYRotationLow, lightYRotationHigh), 0);
 
                 GameObject lightSource = GameObject.Instantiate(sunLight);
                 lightSource.SetActive(true);
@@ -98,8 +114,9 @@ public class LightManager : Helper
                 {
                     foreach (GameObject ceiling in ceilingList)
                     {
-                        ceiling.AddComponent<Light>();
-                        ceiling.GetComponent<Light>().intensity = UnityEngine.Random.Range(1.0f, 2.0f);
+                        ceiling.SetActive(false);
+                        //ceiling.AddComponent<Light>();
+                        //ceiling.GetComponent<Light>().intensity = UnityEngine.Random.Range(1.0f, 2.0f);
                     }
 
                 }
@@ -114,6 +131,8 @@ public class LightManager : Helper
                 spotSource.SetActive(true);
                 spotSource.GetComponent<Light>().intensity = Random.Range(indoorLightIntensityLow, indoorLightIntensityHigh);
                 spotSource.GetComponent<Light>().range = Random.Range(rangeLow, rangeHigh); ;
+                Color color = getColor();
+                spotSource.GetComponent<Light>().color = color;
 
                 var modelBounds = GetMeshHierarchyBounds(curretModel);
                 spotSource.transform.position = new Vector3(curretModel.transform.position.x, currentBounds_2.max.y - .75f, curretModel.transform.position.z);
@@ -133,9 +152,6 @@ public class LightManager : Helper
                     {
                         ceiling.AddComponent<Light>();
                         ceiling.GetComponent<Light>().intensity = 1.0f;
-
-                        Color color;
-                        ColorUtility.TryParseHtmlString(getColors()[rnd.Next(getColors().Count)], out color);
                         ceiling.GetComponent<Light>().color = color;
                     }
 
@@ -154,6 +170,7 @@ public class LightManager : Helper
                     {
                         ceiling.AddComponent<Light>();
                         ceiling.GetComponent<Light>().intensity = UnityEngine.Random.Range(0.5f, 2.0f);
+                        ceiling.GetComponent<Light>().color = getColor();
                     }
 
                 }
@@ -164,9 +181,17 @@ public class LightManager : Helper
         return lightSourceList;
     }
 
+    public Color getColor()
+    {
+        System.Random rnd = new System.Random();
+        Color color;
+        ColorUtility.TryParseHtmlString(getColors()[rnd.Next(getColors().Count)], out color);
+        return color;
+    }
+
     public List<string> getColors()
     {
-        return new List<string>() {"#FFF53B", "#FFFFFF", "#58D3D7", "#7BEA7E", "#E9C77A", "#FFFFFF" , "#FFFFFF" , "#FFFFFF" , "#FFFFFF" }; //more whites
+        return (this.colorList.Count==0) ? new List<string>() {"#FFF53B", "#FFFFFF", "#58D3D7", "#7BEA7E", "#E9C77A", "#FFFFFF" , "#FFFFFF" , "#FFFFFF" , "#FFFFFF" } : this.colorList; //more whites
     }
 
     public List<Vector3> getLightPositions(int numOfLights,float xMin, float xMax, float zMin, float zMax, float yMax)

@@ -38,6 +38,13 @@ public class ModelHelper : Helper
 
     public void changeTexutre(GameObject model, string category, string rootTexturePath)
     {
+
+        int num = random.Next(100);
+
+        if (num % 5 == 0)
+        {
+            return; //If even then dont change texture.
+        }
         string[] dirList = Directory.GetDirectories(rootTexturePath);
         string textureFolder = rootTexturePath + Path.DirectorySeparatorChar + category;
         if (dirList.Contains(textureFolder))//Check if there is a texturefolder with name same as category
@@ -49,6 +56,13 @@ public class ModelHelper : Helper
 
             Transform[] allChildren = model.GetComponentsInChildren<Transform>();
             string texturePath = combinedList[random.Next(combinedList.Length)];
+
+            
+            Transform[] childList = model.gameObject.GetComponentsInChildren<Transform>();
+            foreach (Transform child1 in childList)
+            {
+                child1.gameObject.GetComponent<Renderer>().materials[0].mainTexture = null;
+            }
 
             textureChildren(model.gameObject, texturePath);
         }

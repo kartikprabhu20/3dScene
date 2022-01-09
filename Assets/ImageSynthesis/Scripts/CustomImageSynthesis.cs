@@ -25,10 +25,10 @@ public class CustomImageSynthesis : MonoBehaviour
 
     [Header("Save Image Capture")]
     public bool saveImage = true;
-    public bool saveIdSegmentation = true;
-    public bool saveLayerSegmentation = true;
-    public bool saveDepth = true;
-    public bool saveNormals = true;
+    public bool saveIdSegmentation = false;
+    public bool saveLayerSegmentation = false;
+    public bool saveDepth = false;
+    public bool saveNormals = false;
     public bool saveOpticalFlow;
     public string filepath = "..\\Captures";
     public string filename = "test.png";

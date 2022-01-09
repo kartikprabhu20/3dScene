@@ -14,30 +14,39 @@ public class ModelManager : MonoBehaviour
     public GameObject lightSources;
     public Light lightSource;
 
-    public int lightIntensityLow;
-    public int lightIntensityHigh;
-    public int lightXRotationLow;
-    public int lightXRotationHigh;
-    public int lightYRotationLow;
-    public int lightYRotationHigh;
+    //public int lightIntensityLow;
+    //public int lightIntensityHigh;
+    //public int lightXRotationLow;
+    //public int lightXRotationHigh;
+    //public int lightYRotationLow;
+    //public int lightYRotationHigh;
 
+    //Path settings
     public InputField roomPathField;
     public InputField materialPathField;
     public InputField modelsPathField;
     public InputField outputPathField;
+
+    //Dataset settings
     public InputField categoriesInputField;
     public InputField modelCountInputField;
     public InputField categoryCountInputField;
 
-
+    //Camera settings
     public InputField cameraMinInputField;
     public InputField cameraMaxInputField;
     public InputField cameraHeightInputField;
+
+    //Camera settings
+    public InputField lightMinInputField;
+    public InputField lightMaxInputField;
+    public InputField lightColorInputField;
 
     public Text startTime;
     public Text endTime;
     public Text modelCount;
 
+    //Randomize settings
     public Button nextModelButton;
     public Button randomiseTextureButton;
     public Button randomiseLightButton;
@@ -83,7 +92,7 @@ public class ModelManager : MonoBehaviour
 
         roomHelper = new RoomHelper(shader);
         modelHelper = new ModelHelper(shader);
-        lightHelper = new LightManager(lightSources);
+        lightHelper = new LightManager(lightSources, lightColorInputField.text, lightMinInputField.text, lightMaxInputField.text);
         cameraHelper = new CameraHelper(MainCamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
         currentPipeline = new PipelineFactory(roomHelper, modelHelper, cameraHelper,lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE); //Defualt
 
@@ -227,6 +236,9 @@ public class ModelManager : MonoBehaviour
         randomiseTextureButton.gameObject.SetActive(true);
         randomiseModelTextureutton.gameObject.SetActive(true);
 
+        lightHelper = new LightManager(lightSources, lightColorInputField.text, lightMinInputField.text, lightMaxInputField.text);
+        cameraHelper = new CameraHelper(MainCamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
+
         currentPipeline = new PipelineFactory(roomHelper, modelHelper,cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
         currentPipeline.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));
 
@@ -277,7 +289,7 @@ public class ModelManager : MonoBehaviour
             cameraNotSet = !currentPipeline.setupCamera(model);
         } while (cameraNotSet);
 
-        lightSourceList = currentPipeline.setupLigtSources(model, room);
+        //lightSourceList = currentPipeline.setupLigtSources(model, room);
 
     }
 
@@ -356,7 +368,8 @@ public class ModelManager : MonoBehaviour
             cameraHelper = new CameraHelper(GameObject.Instantiate(MainCamera), cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
             roomHelper = new RoomHelper(shader);
             modelHelper = new ModelHelper(shader);
-            lightHelper = new LightManager(GameObject.Instantiate(lightSources));
+            lightHelper = new LightManager(GameObject.Instantiate(lightSources), lightColorInputField.text, lightMinInputField.text, lightMaxInputField.text);
+
             Pipeline currentPipe = new PipelineFactory(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.SINGLE_PIPELINE);
             currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, category, categoryCountInputField.text, origin);
 
@@ -422,6 +435,8 @@ public class ModelManager : MonoBehaviour
     {
         clearEnvironment();
         //StartCoroutine(LoadObjects());
+        lightHelper = new LightManager(lightSources, lightColorInputField.text, lightMinInputField.text, lightMaxInputField.text);
+        cameraHelper = new CameraHelper(MainCamera, cameraMinInputField.text, cameraMaxInputField.text, cameraHeightInputField.text);
 
         Pipeline currentPipe = new PipelineFactory(roomHelper, modelHelper, cameraHelper, lightHelper).getPipeline(PipelineType.ROOM_PIPELINE);
         currentPipe.init(modelsPathField.text, outputPathField.text, roomPathField.text, materialPathField.text, categoriesInputField.text, categoryCountInputField.text, new Vector3(0, 0, 0));

@@ -4,8 +4,8 @@ using UnityEngine;
 public class CameraHelper: Helper
 {
     private Camera mainCamera;
-    private float minDistance = 1.0f;
-    private float maxDistance= 1.5f;
+    private float minDistance = 1.5f;
+    private float maxDistance= 1.75f;
     private float minHeight = 0.25f;
     public string[] commonObjects = {};
 
@@ -44,7 +44,7 @@ public class CameraHelper: Helper
         do
         {
             ///////////////////////// below line works for single room pipeline
-            //mainCamera.transform.position = RandomPointInAnnulus(targetObject.transform.position,this.minDistance,this.maxDistance);
+            //mainCamera.transform.position = RandomPointInAnnulus(targetObject.transform.position, this.minDistance, this.maxDistance);
 
             if (attempts == 0)
             {
