@@ -78,6 +78,7 @@ public class CameraHelper: Helper
         Vector3[] positions = {position2};
         return positions;
     }
+
     public Vector3 RandomPointInAnnulus(Vector3 origin, float minRadius, float maxRadius)
     {
 

@@ -56,8 +56,8 @@ public class LightManager : Helper
             }
         }
 
-        //string[] allChildren = {"PointLight","SunLight","SpotLight","Ceiling"};
-        string[] allChildren = { "SunLight" };
+        string[] allChildren = { "PointLight", "SunLight", "SpotLight", "Ceiling" };
+        //string[] allChildren = { "SunLight" };
         int randomChild = Random.Range(0, allChildren.Length);
         System.Random rnd = new System.Random();
 
